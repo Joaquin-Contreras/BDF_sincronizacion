@@ -42,7 +42,7 @@ print(fecha_real)
 
 def conseguir_comprobantes_de_pago():
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=False) #Cambiar a False SOLO en testing, en deploy tiene que estar en True
         page = browser.new_page()
         context = browser.new_context()
         page.goto("http://appserver26.dyndns.org:8081/#/login")
@@ -129,7 +129,7 @@ def conseguir_comprobantes_de_pago():
 
 
 with sync_playwright() as p:
-    browser = p.chromium.launch(headless=False)
+    browser = p.chromium.launch(headless=False) #Cambiar a False SOLO en testing, en deploy tiene que estar en True
     page = browser.new_page()
     context = browser.new_context()
     page.goto("http://appserver26.dyndns.org:8081/#/login")
@@ -143,7 +143,7 @@ with sync_playwright() as p:
     page.fill("//input[@id='username1']", "sebaf")
     page.fill("//input[@id='pass']", "12345678")
     page.click("//button[@label='INICIAR SESIÓN']")
-    page.wait_for_timeout(50000)
+    page.wait_for_timeout(5000)
 
     page.click("//a[@class='menu-button']")
     page.wait_for_timeout(1000)
@@ -151,20 +151,14 @@ with sync_playwright() as p:
     page.wait_for_timeout(1000)
     page.click("(//a[contains(@class,'p-ripple p-element ng-tns-c5')])[4]")
     page.wait_for_timeout(1000)
-    page.click("//span[@mattooltip='Exportar clientes']")
-    page.wait_for_timeout(1000)
-    page.click("//button[contains(text(),'Exportar')]")
-    page.wait_for_timeout(1000)
+
 
     #Exportar 
     with page.expect_download() as download_info:
-        page.wait_for_selector("//span[@mattooltip='Exportar']")
-        page.click("//span[@mattooltip='Exportar']")
-        page.wait_for_timeout(3000)
-        page.click("(//span[@class='mat-radio-label-content'])[2]")
+        page.click("//span[@mattooltip='Exportar clientes']")
         page.wait_for_timeout(1000)
-        page.click("//button[@class='btn btn-md btn-primary']")
-        page.wait_for_timeout(4000)
+        page.click("//button[contains(text(),'Exportar')]")
+        page.wait_for_timeout(1000)
         
     descarga = download_info.value
     descarga.save_as('./CSV_clientes_old/mendizabal_mc_'+fecha_real+'.csv')
