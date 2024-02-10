@@ -94,10 +94,10 @@ pyautogui.write('12345678')
 time.sleep(1)
 pyautogui.press('enter')
 pyautogui.press('enter')
-time.sleep(20)
+time.sleep(25)
+pyautogui.press('enter')
 pyautogui.press('enter')
 time.sleep(5)
-
 
 resultado_x, resultado_y = buscar_elemento("template_stock.png")
 pyautogui.click(resultado_x, resultado_y - 5)

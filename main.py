@@ -5,9 +5,9 @@ import numpy as np
 import os
 import re
 fecha_actual = datetime.now()
-fecha_formateada = (fecha_actual).strftime("%d de %B de %Y")
+# fecha_formateada = (fecha_actual).strftime("%d de %B de %Y")
 #La línea 8 está solamente para hacer pruebas, la línea 6 es la correspondiente
-# fecha_formateada = (fecha_actual - timedelta(days=3)).strftime("%d de %B de %Y")
+fecha_formateada = (fecha_actual - timedelta(days=5)).strftime("%d de %B de %Y")
 
 months = {
     'January': 'enero',
@@ -31,27 +31,137 @@ if month in months:
 if fecha_real[0] == "0":
     fecha_real = fecha_real[1:]
 
-#FORMATO DE FECHA A USAR:
-# Ej: 8/2/2024 => 20240208
-
 directorio_comprobantes_de_pago = './XLSX_comprobantes_done'
-nombre_archivo = re.sub(r"\s+", "_", 'mendizabal_vta_'+fecha_real+'.xlsx')
+fecha_archivos = datetime.now().strftime('%Y%m%d')
+nombre_archivo = re.sub(r"\s+", "_", 'mendizabal_vta_'+fecha_archivos+'.xlsx')
 ruta_archivo = os.path.join(directorio_comprobantes_de_pago, nombre_archivo)
-print(fecha_real)
+print(fecha_archivos)
 
 
-def conseguir_comprobantes_de_pago():
+es_dia_sin_datos = False
+
+
+
+
+def create_xlsx():
     def asignar_tipo_documento(descripcion):
         if descripcion == 'NOTA DE CREDITO':
             return 'CR'
         elif descripcion == 'NOTA DE DEBITO':
             return 'DR'
         else:
-            return 'OR'
+            return 'OR'    
+    
+    #CREANDO SOLAPA datos ====>
+    #TRANSFORMAR CSV A XLSX
+    try:
+        df_csv_old = pd.read_csv('./CSV_comprobantes_old/mendizabal_vta_'+fecha_real+'.csv', encoding='ISO-8859-1', delimiter='\t')
+    except UnicodeDecodeError:
+        df_csv_old = pd.read_csv('./CSV_comprobantes_old/mendizabal_vta_'+fecha_real+'.csv', encoding='cp1252', delimiter='\t')
+
+    #Seleccionando las columnas que voy a necesitar
+    df = df_csv_old[['Descripcion Comprobante', 'Numero', 'Descripcion Motivo Rechazo / Devolucion', 'Vendedor', 'Descripcion Vendedor', 'Cliente', 'Subcanal', 'Codigo de Articulo', 'Unidades', 'Fecha Comprobante']]    # 'Comprobante'
+    # 'Descripción PROVEEDORES'
+    #Renombrando columnas
+    df.rename(columns={
+            "Cliente": "IdCliente",
+            "Subcanal": "IdTipoDeCliente",
+            "Vendedor": "IdVendedor",
+            "Fecha Comprobante": "Fecha",
+            "Unidades": "Cantidad",
+            "Numero": "NroComprobante",
+            "Descripcion Motivo Rechazo / Devolucion": "MotivoCR",
+            "Codigo de Articulo": "IdProducto",
+            }, inplace=True)
+        
+        #Agregando columnas necesarias
+    df["IdDistribuidor"] = "40379573"
+    df["UnidadMedida"] = "PC"
+    df['IdPaquete'] = range(1, len(df) + 1)
+    df[['Apellido', 'Nombre']] = df['Descripcion Vendedor'].str.split(n=1, expand=True)
+    df['Fecha'] = pd.to_datetime(df['Fecha'], format='%d/%m/%Y').dt.strftime('%Y%m%d')
+
+    # Aplicar la función a la columna 'Descripcion Comprobante' para crear la nueva columna 'TipoDocumento'
+    df['TipoDocumento'] = df['Descripcion Comprobante'].apply(asignar_tipo_documento)
+    df['NroComprobanteAsociado'] = np.where(df['Descripcion Comprobante'] == 'NOTA DE CREDITO', df['NroComprobante'], np.nan)
+    df.drop('Descripcion Vendedor', axis=1, inplace=True)
+    df.drop('Descripcion Comprobante', axis=1, inplace=True)
+
+
+
+
+    if not os.path.exists(directorio_comprobantes_de_pago):
+        try:
+            os.makedirs(directorio_comprobantes_de_pago)
+            print(f"Directorio '{directorio_comprobantes_de_pago}' creado correctamente.")
+        except OSError as e:
+            print(f"No se pudo crear el directorio '{directorio_comprobantes_de_pago}': {e}")
+
+
+
+
+    #<=====     CREANDO SOLAPA datos
+    # CREANDO SOLAPA verificacion =====>
+    total_registros = len(df)
+    suma_cantidad = df['Cantidad'].sum()
+    data = {'IDICADOR': ['CantRegistros', 'TotalUnidades']}
+    df_verificacion = pd.DataFrame(data)
+    df_verificacion['VALOR'] = [total_registros, suma_cantidad]
+    #<===== CREANDO SOLAPA verificacion
+
+
+    #Convirtiendo DF a XLSX y creando la solapa datos
+    if os.access(directorio_comprobantes_de_pago, os.W_OK):
+        try:
+            with pd.ExcelWriter('./XLSX_comprobantes_done/'+''+nombre_archivo) as writer:
+                df.to_excel(writer, sheet_name="datos", index=False)
+                df_verificacion.to_excel(writer, sheet_name="Verificacion", index=False)
+            print(f"Archivo '{nombre_archivo}' creado correctamente en '{directorio_comprobantes_de_pago}'.")
+        except Exception as e:
+            print(f"Error al crear el archivo '{nombre_archivo}': {e}")
+    else:
+        print(f"No tienes permisos para escribir en el directorio '{directorio_comprobantes_de_pago}'.")
+
+
+
+
+
+def get_xlsx_without_data():
+    df = pd.DataFrame(columns=["NroComprobante", "MotivoCR", "IdVendedor", "IdCliente",
+                            "IdTipoDeCliente", "Fecha", "IdPaquete", "IdProducto",
+                            "NroComprobanteAsociado", "TipoDocumento", "UnidadMedida",
+                            "Unidades", "IdDistribuidor", "Apellido", "Nombre"])
+    df_verificacion = pd.DataFrame(data={'IDICADOR': ['CantRegistros', 'TotalUnidades'], 'VALOR': [0, 0]})
+
+    #Convirtiendo DF a XLSX y creando la solapa datos
+    if os.access(directorio_comprobantes_de_pago, os.W_OK):
+        try:
+            with pd.ExcelWriter('./XLSX_comprobantes_done/'+''+nombre_archivo) as writer:
+                df.to_excel(writer, sheet_name="datos", index=False)
+                df_verificacion.to_excel(writer, sheet_name="Verificacion", index=False)
+                print(f"Archivo '{nombre_archivo}' creado correctamente en '{directorio_comprobantes_de_pago}'.")
+        except Exception as e:
+                print(f"Error al crear el archivo '{nombre_archivo}': {e}")
+    else:
+        print(f"No tienes permisos para escribir en el directorio '{directorio_comprobantes_de_pago}'.")
+
+
+
+
+
+
+
+
+
+
+
+
+def conseguir_comprobantes_de_pago():
+
         
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True) #Cambiar a False SOLO en testing, en deploy tiene que estar en True
+        browser = p.chromium.launch(headless=False) #Cambiar a False SOLO en testing, en deploy tiene que estar en True
         page = browser.new_page()
         context = browser.new_context()
         page.goto("http://appserver26.dyndns.org:8081/#/login")
@@ -82,90 +192,42 @@ def conseguir_comprobantes_de_pago():
         page.click("//button[@aria-label='"+fecha_real+"']")
         page.wait_for_timeout(2000)
         #Seleccionar Fecha <=
-        #Procesar
+
         page.click("//button[@class='btn btn-primary ng-star-inserted']")
+        toast_item_exists = page.inner_text('p-toastitem') is not None
+
         page.wait_for_timeout(10000)
 
-        #Exportar 
-        with page.expect_download() as download_info:
-            page.wait_for_selector("//span[@mattooltip='Exportar']")
-            page.click("//span[@mattooltip='Exportar']")
-            page.wait_for_timeout(3000)
-            page.click("(//span[@class='mat-radio-label-content'])[2]")
-            page.wait_for_timeout(1000)
-            page.click("//button[@class='btn btn-md btn-primary']")
-            page.wait_for_timeout(4000)
-        
-        if not os.path.exists('./CSV_comprobantes_old'):
-            try:
-                os.makedirs('./CSV_comprobantes_old')
-                print("Directorio /CSV_comprobantes_old creado exitosamente")
-            except:
-                print("No se pudo crear el directorio /CSV_comprobantes_old")
+        if not toast_item_exists:
+            #Exportar 
+            with page.expect_download() as download_info:
+                page.wait_for_selector("//span[@mattooltip='Exportar']")
+                page.click("//span[@mattooltip='Exportar']")
+                page.wait_for_timeout(3000)
+                page.click("(//span[@class='mat-radio-label-content'])[2]")
+                page.wait_for_timeout(1000)
+                page.click("//button[@class='btn btn-md btn-primary']")
+                page.wait_for_timeout(4000)
 
-        descarga = download_info.value
-        descarga.save_as('./CSV_comprobantes_old/mendizabal_vta_'+fecha_real+'.csv')
+                if not os.path.exists('./CSV_comprobantes_old'):
+                    try:
+                        os.makedirs('./CSV_comprobantes_old')
+                        print("Directorio /CSV_comprobantes_old creado exitosamente")
+                    except:
+                        print("No se pudo crear el directorio /CSV_comprobantes_old")
+
+                descarga = download_info.value
+                descarga.save_as('./CSV_comprobantes_old/mendizabal_vta_'+fecha_real+'.csv')
+        else:
+            es_dia_sin_datos = True
+            print("No hay datos para el dia"+ " " + fecha_real)
+
         browser.close()
 
-
-    #TRANSFORMAR CSV A XLSX
-    try:
-        df_csv_old = pd.read_csv('./CSV_comprobantes_old/mendizabal_vta_'+fecha_real+'.csv', encoding='ISO-8859-1', delimiter='\t')
-    except UnicodeDecodeError:
-        df_csv_old = pd.read_csv('./CSV_comprobantes_old/mendizabal_vta_'+fecha_real+'.csv', encoding='cp1252', delimiter='\t')
-
-    #Seleccionando las columnas que voy a necesitar
-    df = df_csv_old[['Descripcion Comprobante', 'Numero', 'Descripcion Motivo Rechazo / Devolucion', 'Vendedor', 'Descripcion Vendedor', 'Cliente', 'Subcanal', 'Codigo de Articulo', 'Unidades', 'Fecha Comprobante']]
-    # 'Comprobante'
-    # 'Descripción PROVEEDORES'
-    #Renombrando columnas
-    df.rename(columns={
-        "Cliente": "IdCliente",
-        "Subcanal": "IdTipoDeCliente",
-        "Vendedor": "IdVendedor",
-        "Fecha Comprobante": "Fecha",
-        "Unidades": "Cantidad",
-        "Numero": "NroComprobante",
-        "Descripcion Motivo Rechazo / Devolucion": "MotivoCR",
-        "Codigo de Articulo": "IdProducto",
-        }, inplace=True)
-    
-    #Agregando columnas necesarias
-    df["IdDistribuidor"] = "40379573"
-    df["UnidadMedida"] = "PC"
-    df['IdPaquete'] = range(1, len(df) + 1)
-    df[['Apellido', 'Nombre']] = df['Descripcion Vendedor'].str.split(n=1, expand=True)
-
-    # Aplicar la función a la columna 'Descripcion Comprobante' para crear la nueva columna 'TipoDocumento'
-    df['TipoDocumento'] = df['Descripcion Comprobante'].apply(asignar_tipo_documento)
-    df['NroComprobanteAsociado'] = np.where(df['Descripcion Comprobante'] == 'NOTA DE CREDITO', df['NroComprobante'], np.nan)
-    df.drop('Descripcion Vendedor', axis=1, inplace=True)
-    df.drop('Descripcion Comprobante', axis=1, inplace=True)
-
-
-
-
-    if not os.path.exists(directorio_comprobantes_de_pago):
-        try:
-            os.makedirs(directorio_comprobantes_de_pago)
-            print(f"Directorio '{directorio_comprobantes_de_pago}' creado correctamente.")
-        except OSError as e:
-            print(f"No se pudo crear el directorio '{directorio_comprobantes_de_pago}': {e}")
-
-    
-
-    #Convirtiendo DF a XLSX
-    if os.access(directorio_comprobantes_de_pago, os.W_OK):
-        try:
-            with pd.ExcelWriter('./XLSX_comprobantes_done/'+''+nombre_archivo) as writer:
-                df.to_excel(writer, sheet_name="Datos", index=False)
-                # df.to_excel(writer, sheet_name="Verificacion", index=False)
-            print(f"Archivo '{nombre_archivo}' creado correctamente en '{directorio_comprobantes_de_pago}'.")
-        except Exception as e:
-            print(f"Error al crear el archivo '{nombre_archivo}': {e}")
+    if not es_dia_sin_datos:
+        create_xlsx()
     else:
-        print(f"No tienes permisos para escribir en el directorio '{directorio_comprobantes_de_pago}'.")
-
+        get_xlsx_without_data()
 conseguir_comprobantes_de_pago()
 
 
@@ -176,7 +238,7 @@ conseguir_comprobantes_de_pago()
 
 def conseguir_clientes():
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False) #Cambiar a False SOLO en testing, en deploy tiene que estar en True
+        browser = p.chromium.launch(headless=True) #Cambiar a False SOLO en testing, en deploy tiene que estar en True
         page = browser.new_page()
         context = browser.new_context()
         page.goto("http://appserver26.dyndns.org:8081/#/login")
@@ -210,29 +272,5 @@ def conseguir_clientes():
         descarga = download_info.value
         descarga.save_as('./CSV_clientes_old/mendizabal_mc_'+fecha_real+'.csv')
 
-
         browser.close()
-
 # conseguir_clientes()
-
-
-
-
-#CAMPOS PARA VTA
-        
-    # IdProducto => Columna: ¿Código de articulo? 
-        
-    # NroComprobanteAsociado =>  Columna: Numero (Solo si es CR) 
-    # TipoDocumento => Nota de Débito == "DR" AND NOTA DE CREDITO == "CR" AND Resto == "OR" 
-    # UnidadMedida => "PC"
-    # NombreVendedor => Columna: Descripcion Vendedor .split(" ")[1] 
-    # Apellido Vendedor => Columna: Descripcion Vendedor .split(" ")[0] 
-    # IdPaquete => ID auto_increment
-    # NroComprobante => Columna: Numero
-    # Cantidad => Columna: Unidades
-    # IdDistribuidor => 40379573
-    # IdCliente => Columna: Cliente 
-    # IdTipoDeCliente => Columna: Subcanal 
-    # IdVendedor => Columna: Vendedor 
-    # Fecha => Columna: Fecha Comprobante (Cambiar formato a yyyy-mm-dd) 
-    # MotivoCR => Columna: Descripcion Motivo Rechazo / Devolucion 
