@@ -81,8 +81,44 @@ def create_xlsx_comprobantes_de_pago():
     df["UnidadMedida"] = "PC"
     df['IdPaquete'] = range(1, len(df) + 1)
     df[['Apellido', 'Nombre']] = df['Descripcion Vendedor'].str.split(n=1, expand=True)
-    df['Fecha'] = pd.to_datetime(df['Fecha'], format='%d/%m/%Y').dt.strftime('%Y%m%d')
-
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    df['Fecha'] = pd.to_datetime(df['Fecha'], format='%d/%m/%Y').dt.strftime('%Y%m%d') # Cambiar de YYYYMMDD A YYYY-MM-DD
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
+    #######################################
     # Aplicar la función a la columna 'Descripcion Comprobante' para crear la nueva columna 'TipoDocumento'
     df['TipoDocumento'] = df['Descripcion Comprobante'].apply(asignar_tipo_documento)
     df['NroComprobanteAsociado'] = np.where(df['Descripcion Comprobante'] == 'NOTA DE CREDITO', df['NroComprobante'], np.nan)
@@ -266,12 +302,40 @@ def create_xlsx_master_clientes():
     'DISTRIDIGITAL': 52, 
     'PROFESSIONAL': 203, 
     'CADENAS REGIONALES': 1 
-}
+    }
+    provincias = {
+        'CAPITAL FEDERAL': 2,
+        'BUENOS AIRES': 6,
+        'CATAMARCA': 10,
+        'CORDOBA': 14,
+        'CORRIENTES': 18,
+        'CHACO': 22,
+        'CHUBUT': 26,
+        'ENTRE RIOS': 30,
+        'FORMOSA': 34,
+        'JUJUY': 38,
+        'LA PAMPA': 42,
+        'LA RIOJA': 46,
+        'MENDOZA': 50,
+        'MISIONES': 54,
+        'NEUQUEN': 58,
+        'RIO NEGRO': 62,
+        'SALTA': 66,
+        'SAN JUAN': 70,
+        'SAN LUIS': 74,
+        'SANTA CRUZ': 78,
+        'SANTA FE': 82,
+        'SANTIAGO DEL ESTERO': 86,
+        'TUCUMAN': 90,
+        'TIERRA DEL FUEGO': 94
+    }
 
     # Creando Solapa Datos ========>
     df_clientes_datos = pd.read_excel('./CSV_clientes_old/mendizabal_mc_'+fecha_archivos+'_1.xlsx', sheet_name="Clientes", header=1, skiprows=[2])
 
     df_jerarquiaMKT_datos = pd.read_excel('./CSV_clientes_old/mendizabal_mc_'+fecha_archivos+'_1.xlsx', sheet_name="Jerarquía MKT", header=1)
+
+    df_localidades = pd.read_excel('XLSX_localidades_provincias/Localidades.xlsx', sheet_name="Localidades", header=1)
 
     df = pd.DataFrame()
     df['IdDistribuidor'] = ["40379573"] * len(df_clientes_datos)
@@ -287,20 +351,40 @@ def create_xlsx_master_clientes():
     df['CUIT'] = df_clientes_datos['Identificador']
     df['Latitud'] = df_clientes_datos['Latitud']
     df['Longitud'] = df_clientes_datos['Longitud']
+
     df_merged = pd.DataFrame()
     # Agregamos la columna 'Subcanal MKT' de df1 al nuevo DataFrame
     df_merged['Subcanal MKT'] = df_clientes_datos['Subcanal MKT']
-
     # Creamos un diccionario para mapear los valores de 'Código' en df1 con los valores correspondientes de 'Subcanal MKT' en df2
     codigo_to_subcanal = dict(zip(df_jerarquiaMKT_datos['Código'], df_jerarquiaMKT_datos['Subcanal MKT']))
-
     # Mapeamos los valores de 'Código' en df1 con los valores correspondientes de 'Subcanal MKT' en df2
     df_merged['Subcanal MKT'] = df_merged['Subcanal MKT'].map(codigo_to_subcanal)
-
     df['IdTipoCliente'] = df_merged['Subcanal MKT'].map(equivalencias)
     
+    df_merged_l = pd.DataFrame()
+    df_merged_l['codigo_localidad'] = df_clientes_datos['Código Localidad']
+    codigo_to_localidad = dict(zip(df_localidades['Id'], df_localidades['Localidad']))
+    df_merged_l['Localidad'] = df_merged_l['codigo_localidad'].map(codigo_to_localidad)
+    df['Localidad'] = df['Localidad'].map(df_merged_l['Localidad'])
+
+    df_merged_cp = pd.DataFrame()
+    df_merged_cp['codigo_localidad'] = df_clientes_datos['Código Localidad']
+    codigo_to_cp = dict(zip(df_localidades['Id'], df_localidades['Código Postal']))
+    df_merged_cp['CodigoPostal'] = df_merged_cp['codigo_localidad'].map(codigo_to_cp)
+    df['CodigoPostal'] = df_merged_cp['CodigoPostal']
+
+
+    df_merged_prov = pd.DataFrame()
+    df_merged_prov['codigo_localidad'] = df_clientes_datos['Código Localidad']
+    codigo_to_provincia = dict(zip(df_localidades['Id'], df_localidades['Provincia']))
+    df_merged_prov['Provincia'] = df_merged_prov['codigo_localidad'].map(codigo_to_provincia)
+    df['IdProvincia'] = df_merged_prov['Provincia'].map(provincias)
+
+    df['BannerText'] = ""
+
     df = df.dropna(subset=['IdTipoCliente'])
     df.reset_index(drop=True, inplace=True)
+    print(df.head(50))
     #<======== Creando Solapa Datos 
 
     # CREANDO SOLAPA verificacion =====>
@@ -332,9 +416,9 @@ def create_xlsx_master_clientes():
         print(f"No tienes permisos para escribir en el directorio '{directorio_master_clientes}'.") 
 
 
-async def conseguir_clientes():
+def conseguir_clientes():
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False) #Cambiar a False SOLO en testing, en deploy tiene que estar en True
+        browser = p.chromium.launch(headless=True) #Cambiar a False SOLO en testing, en deploy tiene que estar en True
         page = browser.new_page()
         context = browser.new_context()
         page.goto("http://appserver26.dyndns.org:8081/#/login")
@@ -362,8 +446,6 @@ async def conseguir_clientes():
         with page.expect_download() as download_info:
             page.click("//span[@mattooltip='Exportar clientes']")
             page.wait_for_timeout(1000)
-            page.click("(//span[@class='mat-checkbox-inner-container'])[2]")
-            page.wait_for_timeout(1000)
             page.click("//button[contains(text(),'Exportar')]")
             page.wait_for_timeout(1000)
             
@@ -380,17 +462,8 @@ conseguir_clientes()
 
 
 
-# IdDistribuidor => "40379573"
-# IdPaquete => AUTO_INCREMENT
-# IdCliente => Columna: Cliente
-# RazonSocial => Columna: Razón Social 
 # BannerText => ????
 # IdProvincia => NO ESTÁ EN EL EXCEL
 # Localidad => Columna: Código Localidad
 # CodigoPostal => Columna: 
-# Calle => Columna: Calle
-# Numero => Columna: Altura
 # CUIT => Columna: Identificador????
-# Latitud => Columna: Latitud
-# Longitud => Columna: Longitud
-# IdTipoCliente => Subcanal MKT
