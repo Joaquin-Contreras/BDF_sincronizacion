@@ -7,36 +7,32 @@ import pyautogui
 import time
 import cv2
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import pandas as pd
+import os
+import re
+import random
+import time
 
 pyautogui.FAILSAFE = False
 
 
-fecha_actual = datetime.now()
-fecha_formateada = (fecha_actual).strftime("%d de %B de %Y")
-#La línea 8 está solamente para hacer pruebas, la línea 6 es la correspondiente
-# fecha_formateada = (fecha_actual - timedelta(days=3)).strftime("%d de %B de %Y")
-
-months = {
-    'January': 'enero',
-    'February': 'febrero',
-    'March': 'marzo',
-    'April': 'abril',
-    'May': 'mayo',
-    'June': 'junio',
-    'August': 'agosto',
-    'September': 'septiembre',
-    'October': 'octubre',
-    'November': 'noviembre',
-    'December': 'diciembre'
-}
-month = fecha_formateada.split(" de ")[1].split(" de ")[0]
-
-if month in months:
-    mes = months[month]
-    fecha_real = fecha_formateada.replace(month,mes)
+fecha_formateada = datetime.now().strftime("%Y-%m-%d")
 fecha_archivos = datetime.now().strftime('%Y%m%d')
+nombre_archivo_inventario = re.sub(r"\s+", "_", 'mendizabal_inv_'+fecha_archivos+'.xlsx')
+
+directorio = './XLSX_inventario_old'
+directorio_done = './XLSX_inventario_done'
+
+
+def generar_id_unico():
+    # Obtener el tiempo actual en milisegundos
+    tiempo_actual = int(time.time() * 1000)
+    # Generar un número aleatorio de 6 dígitos
+    numero_aleatorio = random.randint(100000, 999999)
+    # Combinar el tiempo actual y el número aleatorio para formar el ID único
+    id_unico = int(f"{tiempo_actual}{numero_aleatorio}")
+    return id_unico
 
 # Carga la imagen de la plantilla
 def buscar_elemento(template_image):
@@ -61,6 +57,16 @@ def buscar_elemento(template_image):
         
     return x, y
 
+print(fecha_formateada)
+
+
+
+if not os.path.exists(directorio):
+    try:
+        os.makedirs(directorio)
+        print(f"Directorio '{directorio}' creado correctamente.")
+    except OSError as e:
+        print(f"No se pudo crear el directorio '{directorio}': {e}")
 
 # ancho, alto = pyautogui.size()
 # print("Dimensiones de la pantalla:")
@@ -149,25 +155,56 @@ def buscar_elemento(template_image):
 
 
 
+df = pd.DataFrame()
+
+df_inventario = pd.read_excel('./XLSX_inventario_old/XLSX_inventario_old'+fecha_archivos+'.xlsx')
+
+df['IdDistribuidor'] = ["40379573"] * len(df_inventario)
+df['IdPaquete'] = generar_id_unico()
+df['IdProducto'] = df_inventario['Artículo']
+df['UnidadMedida'] = "PC"
+df['Fecha'] = fecha_formateada
+df['Cantidad'] = df_inventario['Stock disponible']
+
+
+
+total_registros = len(df_inventario)
+suma_cantidad = df_inventario['Stock disponible'].sum()
+data = {'IDICADOR': ['CantRegistros', 'TotalUnidades']}
+df_verificacion = pd.DataFrame(data)
+df_verificacion['VALOR'] = [total_registros, suma_cantidad]
 
 
 
 
+if not os.path.exists(directorio_done):
+    try:
+        os.makedirs(directorio_done)
+        print(f"Directorio '{directorio_done}' creado correctamente.")
+    except OSError as e:
+        print(f"No se pudo crear el directorio '{directorio_done}': {e}")
 
-
-
-
-
-
-
+if os.access(directorio_done, os.W_OK):
+    try:
+        with pd.ExcelWriter(directorio_done+'/'+nombre_archivo_inventario) as writer:
+            df.to_excel(writer, sheet_name="datos", index=False)
+            df_verificacion.to_excel(writer, sheet_name="verificacion", index=False)
+        print(f"Archivo '{nombre_archivo_inventario}' creado correctamente en '{directorio_done}'.")
+    except Exception as e:
+        print(f"Error al crear el archivo '{nombre_archivo_inventario}': {e}")
+else:
+    print(f"No tienes permisos para escribir en el directorio '{directorio_done}'.") 
 
 
 #CAMPOS:
-# IdDistribuidor => ["40379573"] * len(df)
+# IdTipoInventario => ########
+# Deposito => ##################
+
+
+
+# IdDistribuidor => ["40379573"] * len(df) 
 # IdPaquete => AUTO_INCREMENT
 # IdProducto => Columna: Artículo
 # UnidadMedida => "PC"
 # Fecha => YYYY-MM-DD
-# IdTipoInventario => ########
-# Deposito => ##################
 # Cantidad => Columna: Stock disponible

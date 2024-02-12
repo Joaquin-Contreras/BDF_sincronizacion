@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import os
 import re
+import random
+import time
 fecha_actual = datetime.now()
 fecha_formateada = (fecha_actual).strftime("%d de %B de %Y")
 #La línea 8 está solamente para hacer pruebas, la línea 6 es la correspondiente
@@ -46,11 +48,21 @@ es_dia_sin_datos = False
 
 
 def create_xlsx_comprobantes_de_pago():
+
+    def generar_id_unico():
+        # Obtener el tiempo actual en milisegundos
+        tiempo_actual = int(time.time() * 1000)
+        # Generar un número aleatorio de 6 dígitos
+        numero_aleatorio = random.randint(100000, 999999)
+        # Combinar el tiempo actual y el número aleatorio para formar el ID único
+        id_unico = int(f"{tiempo_actual}{numero_aleatorio}")
+        return id_unico
+
     def asignar_tipo_documento(descripcion):
         if descripcion == 'NOTA DE CREDITO':
             return 'CR'
         elif descripcion == 'NOTA DE DEBITO':
-            return 'DR'
+            return 'DE'
         else:
             return 'OR'    
     
@@ -79,7 +91,7 @@ def create_xlsx_comprobantes_de_pago():
         #Agregando columnas necesarias
     df["IdDistribuidor"] = "40379573"
     df["UnidadMedida"] = "PC"
-    df['IdPaquete'] = range(1, len(df) + 1)
+    df['IdPaquete'] = generar_id_unico()
     df[['Apellido', 'Nombre']] = df['Descripcion Vendedor'].str.split(n=1, expand=True)
     #######################################
     #######################################
@@ -100,7 +112,7 @@ def create_xlsx_comprobantes_de_pago():
     #######################################
     #######################################
     #######################################
-    df['Fecha'] = pd.to_datetime(df['Fecha'], format='%d/%m/%Y').dt.strftime('%Y%m%d') # Cambiar de YYYYMMDD A YYYY-MM-DD
+    df['Fecha'] = pd.to_datetime(df['Fecha'], format='%d/%m/%Y').dt.strftime('%Y-%m-%d') # Cambiar de YYYYMMDD A YYYY-MM-DD
     #######################################
     #######################################
     #######################################
@@ -153,7 +165,7 @@ def create_xlsx_comprobantes_de_pago():
         try:
             with pd.ExcelWriter('./XLSX_comprobantes_done/'+''+nombre_archivo_comprobantes) as writer:
                 df.to_excel(writer, sheet_name="datos", index=False)
-                df_verificacion.to_excel(writer, sheet_name="Verificacion", index=False)
+                df_verificacion.to_excel(writer, sheet_name="verificacion", index=False)
             print(f"Archivo '{nombre_archivo_comprobantes}' creado correctamente en '{directorio_comprobantes_de_pago}'.")
         except Exception as e:
             print(f"Error al crear el archivo '{nombre_archivo_comprobantes}': {e}")
@@ -176,7 +188,7 @@ def get_xlsx_without_data_comprobantes_de_pago():
         try:
             with pd.ExcelWriter('./XLSX_comprobantes_done/'+''+nombre_archivo_comprobantes) as writer:
                 df.to_excel(writer, sheet_name="datos", index=False)
-                df_verificacion.to_excel(writer, sheet_name="Verificacion", index=False)
+                df_verificacion.to_excel(writer, sheet_name="verificacion", index=False)
                 print(f"Archivo '{nombre_archivo_comprobantes}' creado correctamente en '{directorio_comprobantes_de_pago}'.")
         except Exception as e:
                 print(f"Error al crear el archivo '{nombre_archivo_comprobantes}': {e}")
@@ -196,7 +208,7 @@ def get_xlsx_without_data_comprobantes_de_pago():
 
 def conseguir_comprobantes_de_pago():
 
-        
+
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True) #Cambiar a False SOLO en testing, en deploy tiene que estar en True
@@ -285,6 +297,16 @@ def conseguir_comprobantes_de_pago():
 
 
 def create_xlsx_master_clientes():
+
+    def generar_id_unico():
+        # Obtener el tiempo actual en milisegundos
+        tiempo_actual = int(time.time() * 1000)
+        # Generar un número aleatorio de 6 dígitos
+        numero_aleatorio = random.randint(100000, 999999)
+        # Combinar el tiempo actual y el número aleatorio para formar el ID único
+        id_unico = int(f"{tiempo_actual}{numero_aleatorio}")
+        return id_unico
+
     equivalencias = {
     'SPM Y AUTOS. CHICO': 61, 
     'MAYORISTAS': 40, 
@@ -339,13 +361,10 @@ def create_xlsx_master_clientes():
 
     df = pd.DataFrame()
     df['IdDistribuidor'] = ["40379573"] * len(df_clientes_datos)
-    df['IdPaquete'] = range(1, len(df_clientes_datos) + 1)
+    df['IdPaquete'] = generar_id_unico()
     df['IdCliente'] = df_clientes_datos['Cliente']
     df['RazonSocial'] = df_clientes_datos['Razón social']
-    # df['BannerText'] = ""
-    # df['IdProvincia'] = df_clientes_datos['Provincia']
     df['Localidad'] = df_clientes_datos['Código Localidad']
-    # df['CodigoPostal'] = df_clientes_datos['Código Postal']
     df['Calle'] = df_clientes_datos['Calle']
     df['Numero'] = df_clientes_datos['Altura']
     df['CUIT'] = df_clientes_datos['Identificador']
@@ -371,20 +390,23 @@ def create_xlsx_master_clientes():
     df_merged_cp['codigo_localidad'] = df_clientes_datos['Código Localidad']
     codigo_to_cp = dict(zip(df_localidades['Id'], df_localidades['Código Postal']))
     df_merged_cp['CodigoPostal'] = df_merged_cp['codigo_localidad'].map(codigo_to_cp)
-    df['CodigoPostal'] = df_merged_cp['CodigoPostal']
+    df['CodigoPostal'] = (df_merged_cp['CodigoPostal']).astype(int).replace(',','.')
 
 
     df_merged_prov = pd.DataFrame()
     df_merged_prov['codigo_localidad'] = df_clientes_datos['Código Localidad']
     codigo_to_provincia = dict(zip(df_localidades['Id'], df_localidades['Provincia']))
     df_merged_prov['Provincia'] = df_merged_prov['codigo_localidad'].map(codigo_to_provincia)
-    df['IdProvincia'] = df_merged_prov['Provincia'].map(provincias)
+    df['IdProvincia'] = pd.to_numeric(df_merged_prov['Provincia'].map(provincias), errors='coerce')
 
     df['BannerText'] = ""
 
     df = df.dropna(subset=['IdTipoCliente'])
+    df = df[~df['IdTipoCliente'].isin([float('inf'), float('-inf')])]  # Eliminar filas con valores infinitos
+    df['IdTipoCliente'] = df['IdTipoCliente'].astype(int)   
     df.reset_index(drop=True, inplace=True)
     print(df.head(50))
+    print(df.info())
     #<======== Creando Solapa Datos 
 
     # CREANDO SOLAPA verificacion =====>
@@ -408,7 +430,7 @@ def create_xlsx_master_clientes():
         try:
             with pd.ExcelWriter('./XLSX_master_clientes_done/'+''+nombre_archivo_master_clientes) as writer:
                 df.to_excel(writer, sheet_name="datos", index=False)
-                df_verificacion.to_excel(writer, sheet_name="Verificacion", index=False)
+                df_verificacion.to_excel(writer, sheet_name="verificacion", index=False)
             print(f"Archivo '{nombre_archivo_master_clientes}' creado correctamente en '{directorio_master_clientes}'.")
         except Exception as e:
             print(f"Error al crear el archivo '{nombre_archivo_master_clientes}': {e}")
@@ -459,11 +481,3 @@ def conseguir_clientes():
     create_xlsx_master_clientes()
 
 conseguir_clientes()
-
-
-
-# BannerText => ????
-# IdProvincia => NO ESTÁ EN EL EXCEL
-# Localidad => Columna: Código Localidad
-# CodigoPostal => Columna: 
-# CUIT => Columna: Identificador????
