@@ -93,44 +93,7 @@ def create_xlsx_comprobantes_de_pago():
     df["UnidadMedida"] = "PC"
     df['IdPaquete'] = generar_id_unico()
     df[['Apellido', 'Nombre']] = df['Descripcion Vendedor'].str.split(n=1, expand=True)
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    df['Fecha'] = pd.to_datetime(df['Fecha'], format='%d/%m/%Y').dt.strftime('%Y-%m-%d') # Cambiar de YYYYMMDD A YYYY-MM-DD
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
-    #######################################
+    df['Fecha'] = pd.to_datetime(df['Fecha'], format='%d/%m/%Y').dt.strftime('%Y-%m-%d')
     # Aplicar la función a la columna 'Descripcion Comprobante' para crear la nueva columna 'TipoDocumento'
     df['TipoDocumento'] = df['Descripcion Comprobante'].apply(asignar_tipo_documento)
     df['NroComprobanteAsociado'] = np.where(df['Descripcion Comprobante'] == 'NOTA DE CREDITO', df['NroComprobante'], np.nan)
@@ -364,10 +327,31 @@ def create_xlsx_master_clientes():
     df['IdPaquete'] = generar_id_unico()
     df['IdCliente'] = df_clientes_datos['Cliente']
     df['RazonSocial'] = df_clientes_datos['Razón social']
+    df['BannerText'] = ""
+
+    df_merged_prov = pd.DataFrame()
+    df_merged_prov['codigo_localidad'] = df_clientes_datos['Código Localidad']
+    codigo_to_provincia = dict(zip(df_localidades['Id'], df_localidades['Provincia']))
+    df_merged_prov['Provincia'] = df_merged_prov['codigo_localidad'].map(codigo_to_provincia)
+    df['IdProvincia'] = pd.to_numeric(df_merged_prov['Provincia'].map(provincias), errors='coerce')
+
     df['Localidad'] = df_clientes_datos['Código Localidad']
+    df_merged_l = pd.DataFrame()
+    df_merged_l['codigo_localidad'] = df_clientes_datos['Código Localidad']
+    codigo_to_localidad = dict(zip(df_localidades['Id'], df_localidades['Localidad']))
+    df_merged_l['Localidad'] = df_merged_l['codigo_localidad'].map(codigo_to_localidad)
+    df['Localidad'] = df['Localidad'].map(df_merged_l['Localidad'])
+
+
+    df_merged_cp = pd.DataFrame()
+    df_merged_cp['codigo_localidad'] = df_clientes_datos['Código Localidad']
+    codigo_to_cp = dict(zip(df_localidades['Id'], df_localidades['Código Postal']))
+    df_merged_cp['CodigoPostal'] = df_merged_cp['codigo_localidad'].map(codigo_to_cp)
+    df['CodigoPostal'] = (df_merged_cp['CodigoPostal']).astype(int).replace(',','.')
+
     df['Calle'] = df_clientes_datos['Calle']
     df['Numero'] = df_clientes_datos['Altura']
-    df['CUIT'] = df_clientes_datos['Identificador']
+    df['CUIT'] = df_clientes_datos['Identificador'].astype(str)
     df['Latitud'] = df_clientes_datos['Latitud']
     df['Longitud'] = df_clientes_datos['Longitud']
 
@@ -380,34 +364,19 @@ def create_xlsx_master_clientes():
     df_merged['Subcanal MKT'] = df_merged['Subcanal MKT'].map(codigo_to_subcanal)
     df['IdTipoCliente'] = df_merged['Subcanal MKT'].map(equivalencias)
     
-    df_merged_l = pd.DataFrame()
-    df_merged_l['codigo_localidad'] = df_clientes_datos['Código Localidad']
-    codigo_to_localidad = dict(zip(df_localidades['Id'], df_localidades['Localidad']))
-    df_merged_l['Localidad'] = df_merged_l['codigo_localidad'].map(codigo_to_localidad)
-    df['Localidad'] = df['Localidad'].map(df_merged_l['Localidad'])
-
-    df_merged_cp = pd.DataFrame()
-    df_merged_cp['codigo_localidad'] = df_clientes_datos['Código Localidad']
-    codigo_to_cp = dict(zip(df_localidades['Id'], df_localidades['Código Postal']))
-    df_merged_cp['CodigoPostal'] = df_merged_cp['codigo_localidad'].map(codigo_to_cp)
-    df['CodigoPostal'] = (df_merged_cp['CodigoPostal']).astype(int).replace(',','.')
-
-
-    df_merged_prov = pd.DataFrame()
-    df_merged_prov['codigo_localidad'] = df_clientes_datos['Código Localidad']
-    codigo_to_provincia = dict(zip(df_localidades['Id'], df_localidades['Provincia']))
-    df_merged_prov['Provincia'] = df_merged_prov['codigo_localidad'].map(codigo_to_provincia)
-    df['IdProvincia'] = pd.to_numeric(df_merged_prov['Provincia'].map(provincias), errors='coerce')
-
-    df['BannerText'] = ""
+    condiciones = df['IdTipoCliente'].isin([52, 60, 40])
 
     df = df.dropna(subset=['IdTipoCliente'])
-    df = df[~df['IdTipoCliente'].isin([float('inf'), float('-inf')])]  # Eliminar filas con valores infinitos
-    df['IdTipoCliente'] = df['IdTipoCliente'].astype(int)   
+    # df = df[~df['IdTipoCliente'].isin([float('inf'), float('-inf')])]  # Eliminar filas con valores infinitos
+    df.loc[condiciones, 'IdTipoCliente'] = 2
+    df['IdTipoCliente'] = (df['IdTipoCliente']).astype(int)
+    df = df[df['CUIT'].apply(lambda x: len(str(x)) >= 11)]
     df.reset_index(drop=True, inplace=True)
     print(df.head(50))
     print(df.info())
     #<======== Creando Solapa Datos 
+
+    
 
     # CREANDO SOLAPA verificacion =====>
     total_registros = len(df)

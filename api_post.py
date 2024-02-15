@@ -43,7 +43,8 @@ archivo_inventario = directorio_mc+nombre_archivo_inventario
 print(archivo_inventario)
 with open(archivo_inventario, 'rb') as archivo:
     # Configurar los datos del archivo
-    archivos = {'archivo': (nombre_archivo_inventario, archivo, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+    # archivos = {'archivo': (nombre_archivo_inventario, archivo, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+    archivos = {'archivo': (nombre_archivo_inventario, archivo, 'application/vnd.ms-excel')}
 
     # Definir el encabezado de autorización
     encabezado_autorizacion = {'Authorization': 'Basic bWVuZGl6YWJhbDptZW5kaXphYmFsOTg1NA=='}
