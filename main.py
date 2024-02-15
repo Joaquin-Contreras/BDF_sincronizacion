@@ -6,10 +6,14 @@ import os
 import re
 import random
 import time
+
+fecha_inicio = datetime(2024, 2, 15)  # La fecha de inicio es el 15/2/24
 fecha_actual = datetime.now()
 fecha_formateada = (fecha_actual).strftime("%d de %B de %Y")
 #La línea 8 está solamente para hacer pruebas, la línea 6 es la correspondiente
 # fecha_formateada = (fecha_actual - timedelta(days=2)).strftime("%d de %B de %Y")
+diferencia_dias = (fecha_actual - fecha_inicio).days
+valorIdPaquete = diferencia_dias + 1
 
 months = {
     'January': 'enero',
@@ -49,15 +53,6 @@ es_dia_sin_datos = False
 
 def create_xlsx_comprobantes_de_pago():
 
-    def generar_id_unico():
-        # Obtener el tiempo actual en milisegundos
-        tiempo_actual = int(time.time() * 1000)
-        # Generar un número aleatorio de 6 dígitos
-        numero_aleatorio = random.randint(100000, 999999)
-        # Combinar el tiempo actual y el número aleatorio para formar el ID único
-        id_unico = int(f"{tiempo_actual}{numero_aleatorio}")
-        return id_unico
-
     def asignar_tipo_documento(descripcion):
         if descripcion == 'NOTA DE CREDITO':
             return 'CR'
@@ -91,8 +86,11 @@ def create_xlsx_comprobantes_de_pago():
         #Agregando columnas necesarias
     df["IdDistribuidor"] = "40379573"
     df["UnidadMedida"] = "PC"
-    df['IdPaquete'] = generar_id_unico()
-    df[['Apellido', 'Nombre']] = df['Descripcion Vendedor'].str.split(n=1, expand=True)
+
+    df['IdPaquete'] = valorIdPaquete
+    df['IdPaquete'] = df['IdPaquete'].astype(int)
+
+    df[['ApellidoVendedor', 'NombreVendedor']] = df['Descripcion Vendedor'].str.split(n=1, expand=True)
     df['Fecha'] = pd.to_datetime(df['Fecha'], format='%d/%m/%Y').dt.strftime('%Y-%m-%d')
     # Aplicar la función a la columna 'Descripcion Comprobante' para crear la nueva columna 'TipoDocumento'
     df['TipoDocumento'] = df['Descripcion Comprobante'].apply(asignar_tipo_documento)
@@ -100,7 +98,13 @@ def create_xlsx_comprobantes_de_pago():
     df.drop('Descripcion Vendedor', axis=1, inplace=True)
     df.drop('Descripcion Comprobante', axis=1, inplace=True)
 
-
+    df = df[['IdDistribuidor', 'IdPaquete', 'IdCliente', 'IdTipoDeCliente', 'IdVendedor', 'NombreVendedor', 
+         'ApellidoVendedor', 'IdProducto', 'UnidadMedida', 'Fecha', 'TipoDocumento', 'Cantidad', 
+         'NroComprobante', 'NroComprobanteAsociado', 'MotivoCR']]
+    
+    df = df[df['IdProducto'].apply(lambda x: x > 0)]
+    df = df[(df['TipoDocumento'] != 'CR') | (df['Cantidad'] != 0)]
+    df['IdTipoDeCliente'] = df['IdTipoDeCliente'].replace(16, 8)
 
 
     if not os.path.exists(directorio_comprobantes_de_pago):
@@ -247,7 +251,7 @@ def conseguir_comprobantes_de_pago():
         create_xlsx_comprobantes_de_pago()
     else:
         get_xlsx_without_data_comprobantes_de_pago()
-# conseguir_comprobantes_de_pago()
+conseguir_comprobantes_de_pago()
 
 
 
@@ -261,32 +265,23 @@ def conseguir_comprobantes_de_pago():
 
 def create_xlsx_master_clientes():
 
-    def generar_id_unico():
-        # Obtener el tiempo actual en milisegundos
-        tiempo_actual = int(time.time() * 1000)
-        # Generar un número aleatorio de 6 dígitos
-        numero_aleatorio = random.randint(100000, 999999)
-        # Combinar el tiempo actual y el número aleatorio para formar el ID único
-        id_unico = int(f"{tiempo_actual}{numero_aleatorio}")
-        return id_unico
-
     equivalencias = {
-    'SPM Y AUTOS. CHICO': 61, 
-    'MAYORISTAS': 40, 
-    'PERF. Y CASA DE ART LIMP.': 66, 
-    'DROGUERIAS': 95, 
-    'FERRETERIAS': 52, 
-    'FARMACIA': 90, 
-    'KIOSCOS Y EESS': 62, 
-    'OTROS': 52, 
-    'SPM Y AUTOS. MEDIANO': 60, 
-    'SPM Y AUTOS. GRANDE': 60, 
-    'ALMACENES': 61, 
-    'SUCURSALES': 52, 
+    'SPM Y AUTOS. CHICO': 1, 
+    'MAYORISTAS': 2, 
+    'PERF. Y CASA DE ART LIMP.': 3, 
+    'DROGUERIAS': 4, 
+    'FERRETERIAS': 5, 
+    'FARMACIA': 6, 
+    'KIOSCOS Y EESS': 7, 
+    'OTROS': 8, 
+    'SPM Y AUTOS. MEDIANO': 21, 
+    'SPM Y AUTOS. GRANDE': 22, 
+    'ALMACENES': 23, 
+    'SUCURSALES': 24, 
     'VACANTE': 52, 
-    'DISTRIDIGITAL': 52, 
-    'PROFESSIONAL': 203, 
-    'CADENAS REGIONALES': 1 
+    'DISTRIDIGITAL': 53, 
+    'PROFESSIONAL': 54, 
+    'CADENAS REGIONALES': 55
     }
     provincias = {
         'CAPITAL FEDERAL': 2,
@@ -324,7 +319,9 @@ def create_xlsx_master_clientes():
 
     df = pd.DataFrame()
     df['IdDistribuidor'] = ["40379573"] * len(df_clientes_datos)
-    df['IdPaquete'] = generar_id_unico()
+
+    df['IdPaquete'] = valorIdPaquete
+
     df['IdCliente'] = df_clientes_datos['Cliente']
     df['RazonSocial'] = df_clientes_datos['Razón social']
     df['BannerText'] = ""
@@ -364,13 +361,12 @@ def create_xlsx_master_clientes():
     df_merged['Subcanal MKT'] = df_merged['Subcanal MKT'].map(codigo_to_subcanal)
     df['IdTipoCliente'] = df_merged['Subcanal MKT'].map(equivalencias)
     
-    condiciones = df['IdTipoCliente'].isin([52, 60, 40])
 
     df = df.dropna(subset=['IdTipoCliente'])
-    # df = df[~df['IdTipoCliente'].isin([float('inf'), float('-inf')])]  # Eliminar filas con valores infinitos
-    df.loc[condiciones, 'IdTipoCliente'] = 2
+    df = df.dropna(subset=['Localidad'])
     df['IdTipoCliente'] = (df['IdTipoCliente']).astype(int)
     df = df[df['CUIT'].apply(lambda x: len(str(x)) >= 11)]
+    df = df[df['RazonSocial'].apply(lambda x: '(' not in str(x) and ')' not in str(x))]
     df.reset_index(drop=True, inplace=True)
     print(df.head(50))
     print(df.info())
@@ -397,14 +393,14 @@ def create_xlsx_master_clientes():
     
     if os.access(directorio_master_clientes, os.W_OK):
         try:
-            with pd.ExcelWriter('./XLSX_master_clientes_done/'+''+nombre_archivo_master_clientes) as writer:
+            with pd.ExcelWriter('./XLSX_master_clientes_done/'+''+nombre_archivo_master_clientes, engine='openpyxl') as writer:
                 df.to_excel(writer, sheet_name="datos", index=False)
                 df_verificacion.to_excel(writer, sheet_name="verificacion", index=False)
             print(f"Archivo '{nombre_archivo_master_clientes}' creado correctamente en '{directorio_master_clientes}'.")
         except Exception as e:
             print(f"Error al crear el archivo '{nombre_archivo_master_clientes}': {e}")
     else:
-        print(f"No tienes permisos para escribir en el directorio '{directorio_master_clientes}'.") 
+        print(f"No tienes permisos para escribir en el directorio '{directorio_master_clientes}'.")
 
 
 def conseguir_clientes():
@@ -449,4 +445,4 @@ def conseguir_clientes():
 
     create_xlsx_master_clientes()
 
-conseguir_clientes()
+# conseguir_clientes()
