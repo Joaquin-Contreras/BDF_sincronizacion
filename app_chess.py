@@ -13,26 +13,30 @@ import os
 import re
 import random
 import time
+from dateutil import parser
 
 pyautogui.FAILSAFE = False
 
+fecha_inicio = datetime(2024, 2, 15)  # La fecha de inicio es el 15/2/24
+fecha_actual = datetime.now()
+# fecha_formateada = (fecha_actual).strftime("%d de %B de %Y")
+#La línea 8 está solamente para hacer pruebas, la línea 6 es la correspondiente
+fecha_formateada = (fecha_actual - timedelta(days=1)).strftime("%d de %B de %Y")
+diferencia_dias = (fecha_actual - fecha_inicio).days
+valorIdPaquete = diferencia_dias + 1
 
-fecha_formateada = datetime.now().strftime("%Y-%m-%d")
-fecha_archivos = datetime.now().strftime('%Y%m%d')
+fecha_archivos_menos_un_dia_str  = datetime.now()
+fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=1)
+fecha_archivos = fecha_archivos_menos_un_dia.strftime('%Y%m%d')
+
+fecha_datetime = pd.to_datetime(fecha_archivos).strftime('%Y-%m-%d')
+
+
 nombre_archivo_inventario = re.sub(r"\s+", "_", 'mendizabal_inv_'+fecha_archivos+'.xlsx')
 
 directorio = './XLSX_inventario_old'
 directorio_done = './XLSX_inventario_done'
 
-
-def generar_id_unico():
-    # Obtener el tiempo actual en milisegundos
-    tiempo_actual = int(time.time() * 1000)
-    # Generar un número aleatorio de 6 dígitos
-    numero_aleatorio = random.randint(100000, 999999)
-    # Combinar el tiempo actual y el número aleatorio para formar el ID único
-    id_unico = int(f"{tiempo_actual}{numero_aleatorio}")
-    return id_unico
 
 # Carga la imagen de la plantilla
 def buscar_elemento(template_image):
@@ -68,6 +72,8 @@ if not os.path.exists(directorio):
     except OSError as e:
         print(f"No se pudo crear el directorio '{directorio}': {e}")
 
+
+
 # ancho, alto = pyautogui.size()
 # print("Dimensiones de la pantalla:")
 # print("Ancho:", ancho, "píxeles")
@@ -101,8 +107,10 @@ if not os.path.exists(directorio):
 # pyautogui.press('enter')
 # pyautogui.press('enter')
 # time.sleep(25)
-# pyautogui.press('enter')
-# pyautogui.press('enter')
+# resultado_x, resultado_y = buscar_elemento("template_ok.png")
+# pyautogui.click(resultado_x, resultado_y)
+# # pyautogui.press('enter')
+# # pyautogui.press('enter')
 # time.sleep(5)
 # pyautogui.press('enter')
 # time.sleep(5)
@@ -139,8 +147,8 @@ if not os.path.exists(directorio):
 # pyautogui.click(resultado_x, resultado_y)
 # time.sleep(2)
 # resultado_x, resultado_y = buscar_elemento("template_path.png")
-# pyautogui.click(resultado_x - 30, resultado_y)
-# pyautogui.write("C:/Users/joaco/Nueva carpeta/BDF_sincronizacion_github/BDF_sincronizacion/XLXS_inventario_old")
+# pyautogui.click(resultado_x - 40, resultado_y)
+# pyautogui.write("C:/Users/joaco/Nueva carpeta/BDF_sincronizacion_github/BDF_sincronizacion/XLSX_inventario_old")
 # time.sleep(1)
 # pyautogui.press('enter')
 # time.sleep(2)
@@ -154,22 +162,29 @@ if not os.path.exists(directorio):
 # pyautogui.click(resultado_x, resultado_y)
 
 
+def asignar_tipo_inventario(stock):
+    if stock > 0:
+        return "1"
+    else:
+        return "3"
+
 
 df = pd.DataFrame()
 
 df_inventario = pd.read_excel('./XLSX_inventario_old/XLSX_inventario_old'+fecha_archivos+'.xlsx')
 
 df['IdDistribuidor'] = ["40379573"] * len(df_inventario)
-df['IdPaquete'] = generar_id_unico()
+df['IdPaquete'] = valorIdPaquete
 df['IdProducto'] = df_inventario['Artículo']
 df['UnidadMedida'] = "PC"
-df['Fecha'] = fecha_formateada
-df['Cantidad'] = df_inventario['Stock disponible']
-
+df['Fecha'] = fecha_datetime
+df['IdTipoInventario'] = df_inventario['Stock disponible'].apply(asignar_tipo_inventario)
+df['Deposito'] = ""
+df['Cantidad'] = df_inventario['Stock disponible'].astype(int)
 
 
 total_registros = len(df_inventario)
-suma_cantidad = df_inventario['Stock disponible'].sum()
+suma_cantidad = df_inventario['Stock disponible'].sum().astype(int)
 data = {'IDICADOR': ['CantRegistros', 'TotalUnidades']}
 df_verificacion = pd.DataFrame(data)
 df_verificacion['VALOR'] = [total_registros, suma_cantidad]

@@ -9,9 +9,9 @@ import time
 
 fecha_inicio = datetime(2024, 2, 15)  # La fecha de inicio es el 15/2/24
 fecha_actual = datetime.now()
-fecha_formateada = (fecha_actual).strftime("%d de %B de %Y")
+# fecha_formateada = (fecha_actual).strftime("%d de %B de %Y")
 #La línea 8 está solamente para hacer pruebas, la línea 6 es la correspondiente
-# fecha_formateada = (fecha_actual - timedelta(days=2)).strftime("%d de %B de %Y")
+fecha_formateada = (fecha_actual - timedelta(days=1)).strftime("%d de %B de %Y")
 diferencia_dias = (fecha_actual - fecha_inicio).days
 valorIdPaquete = diferencia_dias + 1
 
@@ -39,8 +39,14 @@ if fecha_real[0] == "0":
 
 directorio_comprobantes_de_pago = './XLSX_comprobantes_done'
 directorio_master_clientes = "./XLSX_master_clientes_done"
-fecha_archivos = datetime.now().strftime('%Y%m%d')
+
+
+fecha_archivos_menos_un_dia_str  = datetime.now()
+fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=1)
+fecha_archivos = fecha_archivos_menos_un_dia.strftime('%Y%m%d')
+
 print(fecha_archivos)
+print(fecha_real)
 
 nombre_archivo_comprobantes = re.sub(r"\s+", "_", 'mendizabal_vta_'+fecha_archivos+'.xlsx')
 nombre_archivo_master_clientes = re.sub(r"\s+", "_", 'mendizabal_mc_'+fecha_archivos+'.xlsx')
@@ -67,9 +73,8 @@ def create_xlsx_comprobantes_de_pago():
         df_csv_old = pd.read_csv('./CSV_comprobantes_old/mendizabal_vta_'+fecha_real+'.csv', encoding='ISO-8859-1', delimiter='\t')
     except UnicodeDecodeError:
         df_csv_old = pd.read_csv('./CSV_comprobantes_old/mendizabal_vta_'+fecha_real+'.csv', encoding='cp1252', delimiter='\t')
-
     #Seleccionando las columnas que voy a necesitar
-    df = df_csv_old[['Descripcion Comprobante', 'Numero', 'Descripcion Motivo Rechazo / Devolucion', 'Vendedor', 'Descripcion Vendedor', 'Cliente', 'Subcanal', 'Codigo de Articulo', 'Unidades', 'Fecha Comprobante']]    # 'Comprobante'
+    df = df_csv_old[['Descripcion Comprobante', 'Numero', 'Descripcion Motivo Rechazo / Devolucion', 'Vendedor', 'Descripcion Vendedor', 'Cliente', 'Subcanal', 'Codigo de Articulo', 'Unidades', 'Fecha Comprobante', 'PROVEEDORES']]    # 'Comprobante'
     # 'Descripción PROVEEDORES'
     #Renombrando columnas
     df.rename(columns={
@@ -104,8 +109,12 @@ def create_xlsx_comprobantes_de_pago():
     
     df = df[df['IdProducto'].apply(lambda x: x > 0)]
     df = df[(df['TipoDocumento'] != 'CR') | (df['Cantidad'] != 0)]
-    df['IdTipoDeCliente'] = df['IdTipoDeCliente'].replace(16, 8)
-
+    df['IdTipoDeCliente'] = df['IdTipoDeCliente'].replace(9, 8)
+    df['IdTipoDeCliente'] = df['IdTipoDeCliente'].replace(11, 8)
+    df['PROVEEDORES'] = df_csv_old['PROVEEDORES']
+    df = df[df['PROVEEDORES'].apply(lambda x: x == 1004)]
+    df.drop('PROVEEDORES', axis=1, inplace=True)
+    
 
     if not os.path.exists(directorio_comprobantes_de_pago):
         try:
