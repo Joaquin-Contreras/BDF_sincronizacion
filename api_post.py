@@ -9,6 +9,14 @@ fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=1
 fecha_archivos = fecha_archivos_menos_un_dia.strftime('%Y%m%d')
 fecha_datetime = pd.to_datetime(fecha_archivos).strftime('%Y-%m-%d')
 
+
+
+fecha_inicio = datetime(2024, 2, 15)  # La fecha de inicio es el 15/2/24
+fecha_actual = datetime.now()
+fecha_formateada = (fecha_actual - timedelta(days=1)).strftime("%d de %B de %Y")
+diferencia_dias = (fecha_actual - fecha_inicio).days
+valorIdPaquete = diferencia_dias + 1
+
 value = "Basic bWVuZGl6YWJhbDptZW5kaXphYmFsOTg1NA=="
 
 
@@ -97,29 +105,27 @@ directorio = "./respuestas/"
 df = pd.DataFrame()
 
 
-print("Fecha datetime:", fecha_datetime)
-print("Datos JSON inv:", json_inv)
-print("Datos JSON mc:", json_mc)
-print("Datos JSON vta:", json_vta)
+# Crear un diccionario con los datos que queremos asignar al DataFrame
+data = {
+    'Id': valorIdPaquete,
+    'Fecha': fecha_datetime,
+    'respuesta_inv_status': json_inv.get('success', 'N/A'),
+    'respuesta_inv_id': json_inv.get('id', 'N/A'),
+    'respuesta_inv_detail': json_inv.get('detail', 'N/A'),  # Aquí suponemos que hay una clave 'detail' en el JSON
+    'respuesta_inv_message': json_inv.get('message', 'N/A'),
+    'respuesta_mc_status': json_mc.get('success', 'N/A'),
+    'respuesta_mc_id': json_mc.get('id', 'N/A'),
+    'respuesta_mc_detail': json_mc.get('detail', 'N/A'),  # Aquí suponemos que hay una clave 'detail' en el JSON
+    'respuesta_mc_message': json_mc.get('message', 'N/A'),
+    'respuesta_vta_status': json_vta.get('success', 'N/A'),
+    'respuesta_vta_id': json_vta.get('id', 'N/A'),
+    'respuesta_vta_detail': json_vta.get('detail', 'N/A'),  # Aquí suponemos que hay una clave 'detail' en el JSON
+    'respuesta_vta_message': json_vta.get('message', 'N/A'),
+}
 
-df['Fecha'] = fecha_datetime
-df['respuesta_inv_status'] = json_inv.get('success', 'N/A')
-df['respuesta_inv_id'] = json_inv.get('id', 'N/A')
-df['respuesta_inv_detail'] = json_inv.get('detail', 'N/A')
-df['respuesta_inv_message'] = json_inv.get('message', 'N/A')
+# Crear el DataFrame con una sola fila a partir del diccionario
+df = pd.DataFrame([data])
 
-df['respuesta_mc_status'] = json_mc.get('success', 'N/A')
-df['respuesta_mc_id'] = json_mc.get('id', 'N/A')
-df['respuesta_mc_detail'] = json_mc.get('detail', 'N/A')
-df['respuesta_mc_message'] = json_mc.get('message', 'N/A')
-
-df['respuesta_vta_status'] = json_vta.get('success', 'N/A')
-df['respuesta_vta_id'] = json_vta.get('id', 'N/A')
-df['respuesta_vta_detail'] = json_vta.get('detail', 'N/A')
-df['respuesta_vta_message'] = json_vta.get('message', 'N/A')
-
-
-print(df.head(10))
 
 if not os.path.exists(directorio):
     try:
