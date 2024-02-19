@@ -454,4 +454,4 @@ def conseguir_clientes():
 
     create_xlsx_master_clientes()
 
-# conseguir_clientes()
+conseguir_clientes()
