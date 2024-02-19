@@ -12,7 +12,9 @@ fecha_datetime = pd.to_datetime(fecha_archivos).strftime('%Y-%m-%d')
 value = "Basic bWVuZGl6YWJhbDptZW5kaXphYmFsOTg1NA=="
 
 
-url_inventario = 'https://dev.BDFdistribuidores.com/ws/inv'
+# url_inventario = 'https://dev.BDFdistribuidores.com/ws/inv'
+url_inventario = "https://mendizabal.BDFdistribuidores.com/ws/inv"
+
 directorio_inventario = "./XLSX_inventario_done/"
 
 nombre_archivo_inventario = 'mendizabal_inv_'+fecha_archivos+'.xlsx'
@@ -40,7 +42,9 @@ with open(archivo_inventario, 'rb') as archivo:
 
 
 
-url_mc = "https://dev.BDFdistribuidores.com/ws/mc"
+# url_mc = "https://dev.BDFdistribuidores.com/ws/mc"
+url_mc = "https://mendizabal.BDFdistribuidores.com/ws/mc"
+
 directorio_mc = "./XLSX_master_clientes_done/"
 
 nombre_archivo_inventario = 'mendizabal_mc_'+fecha_archivos+'.xlsx'
@@ -64,7 +68,9 @@ with open(archivo_inventario, 'rb') as archivo:
 
 
 
-url_mc = "https://dev.BDFdistribuidores.com/ws/vta"
+# url_vta = "https://dev.BDFdistribuidores.com/ws/vta"
+url_vta = "https://mendizabal.BDFdistribuidores.com/ws/vta"
+
 directorio_mc = "./XLSX_comprobantes_done/"
 
 nombre_archivo_inventario = 'mendizabal_vta_'+fecha_archivos+'.xlsx'
@@ -80,7 +86,7 @@ with open(archivo_inventario, 'rb') as archivo:
     encabezado_autorizacion = {'Authorization': 'Basic bWVuZGl6YWJhbDptZW5kaXphYmFsOTg1NA=='}
 
     # Enviar la solicitud POST a la API con los archivos, los datos y el encabezado de autorización
-    respuesta = requests.post(url_mc, files=archivos, headers=encabezado_autorizacion)
+    respuesta = requests.post(url_vta, files=archivos, headers=encabezado_autorizacion)
     json_vta = json.loads(respuesta.text)
     print(respuesta.text)
 
