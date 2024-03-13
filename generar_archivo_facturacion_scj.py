@@ -58,35 +58,51 @@ def generar_archivo_facturacion_scj():
         )
 
     df = pd.DataFrame()
-    valores_no_deseados = ['MINUTA DE INGRESO', 'ANTICIPO', 'NOTA DE DEBITO', 'RECIBO']
+    # valores_no_deseados = ['ANTICIPO', 'FALTANTE DE LIQUIDACION', 'RECIBO']
 
-    df["IdDistribuidor"] = ["15426"] * len(df_comprobantes_old)
+    df_comprobantes_old = df_comprobantes_old.loc[df_comprobantes_old['Unidades por Bulto'] > 0]
+    df_comprobantes_old.reset_index(drop=True, inplace=True)
+
+    df["IdDistribuidor"] = [15426] * len(df_comprobantes_old)
     df["IdPaquete"] = valorIdPaquete
     df["Fecha"] = pd.to_datetime(df_comprobantes_old["Fecha Comprobante"], format="%d/%m/%Y").dt.strftime("%Y-%m-%d")
     df["NroComprobante"] = df_comprobantes_old["Numero"]
-    df['IdPedidoDinesys'] = 0
+    df['IdPedidoDinesys'] = None
     df["NroComprobanteAsociado"] = np.where(
         df_comprobantes_old["Descripcion Comprobante"] == "NOTA DE CREDITO", df_comprobantes_old["Numero"], np.nan
     )
     df["IdCliente"] = df_comprobantes_old["Cliente"]
     df['IdTipoDeCliente'] = df_comprobantes_old['Subcanal']
-    df['IdTipoDeCliente'] = df['IdTipoDeCliente'].replace({11: 8, 9: 8, 15: 8, 10: 8, 16: 8})
+    df['IdTipoDeCliente'] = df['IdTipoDeCliente'].replace({11: 8, 9: 8, 15: 8, 10: 8, 16: 8, 12:8, 52:8, 12:8})
     df["IdVendedor"] = df_comprobantes_old["Vendedor"]
     df["IdProducto"] = df_comprobantes_old["Codigo de Articulo"]
 
-    df['Cantidad'] = df_comprobantes_old['Unidades por Bulto'] * df_comprobantes_old['Bultos Total']
 
-    df['TipoDeComprobante'] = ~df_comprobantes_old['Descripcion Comprobante'].isin(valores_no_deseados)
+
+
+    df['Cantidad'] = ((df_comprobantes_old['Unidades'] * 1) / df_comprobantes_old['Unidades por Bulto']) + df_comprobantes_old['Bultos Cerrados']
+
+
+    
+    df['Cantidad'] = (df['Cantidad'] + 0.01).astype(float)
+    df['Cantidad'] = (df['Cantidad'].apply(lambda x: "{:.2f}".format(x))).astype(float)
+
     df["TipoDeComprobante"] = np.where(
         df_comprobantes_old["Descripcion Comprobante"] == "NOTA DE CREDITO",
         "NC",
-        np.where(df_comprobantes_old["Descripcion Comprobante"] == "NOTA DE DEBITO", "ND", "FC"),
+        np.where(df_comprobantes_old["Descripcion Comprobante"] == "NOTA DE CREDITO MIPYME", "NC", 
+        "FC"),
     )
+
+
     df["MotivoNC"] = np.where(
-        df_comprobantes_old["Descripcion Comprobante"] == "NOTA DE CREDITO",
-        df_comprobantes_old["Motivo Rechazo / Devolucion"],
+        df['TipoDeComprobante'] == "NC",
+        # df_comprobantes_old["Descripcion Comprobante"] == "NOTA DE CREDITO",
+        df_comprobantes_old["Descripcion Motivo Rechazo / Devolucion"],
         np.nan,
     )
+
+    df = df.copy()
 
     df['Deposito'] = df_comprobantes_old['Deposito']
     df = df[df_comprobantes_old["Deposito"].apply(lambda x: x == 1)]
@@ -95,21 +111,14 @@ def generar_archivo_facturacion_scj():
     df.drop(columns=['Deposito'], inplace=True)
     ## SOLAPA VERIFICACIÓN ==>
     df_verificacion = pd.DataFrame()
-    suma_cantidad = df["Cantidad"].sum()
-    # suma_cantidad = "{:,.2f}".format(suma_cantidad).replace(".", ",")
+    suma_cantidad = (df["Cantidad"].astype(float)).sum()
     df_verificacion["IDICADOR"] = ["CantRegistros", "TotalCajas"]
     df_verificacion["VALOR"] = [len(df), suma_cantidad]
 
     
-    def format_with_comma(value):
-        formatted_value = "{:,.2f}".format(value).replace('.', ',')
-        return formatted_value
 
 
-    # df['Cantidad'] = df['Cantidad'].apply(format_with_comma)
     # Convirtiendo DF a XLSX
-
-
     if not os.path.exists(directorio_fac):
         try:
             os.makedirs(directorio_fac)

@@ -106,7 +106,7 @@ def create_xlsx_comprobantes_de_pago():
     )
 
     # Agregando columnas necesarias
-    df["IdDistribuidor"] = "40379573"
+    df["IdDistribuidor"] = 40379573
     df["UnidadMedida"] = "PC"
 
     df["IdPaquete"] = valorIdPaquete
@@ -147,12 +147,13 @@ def create_xlsx_comprobantes_de_pago():
 
     df = df[df["IdProducto"].apply(lambda x: x > 0)]
     df = df[(df["TipoDocumento"] != "CR") | (df["Cantidad"] != 0)]
-    df['IdTipoDeCliente'] = df['IdTipoDeCliente'].replace({11: 8, 9: 8, 15: 8, 10: 8, 16: 8})
+    df['IdTipoDeCliente'] = df['IdTipoDeCliente'].replace({11: 8, 9: 8, 15: 8, 10: 8, 16: 8, 52:8, 12:8})
     df["PROVEEDORES"] = df_csv_old["PROVEEDORES"]
-    df['Cantidad'] = df_csv_old['Unidades por Bulto'] * df_csv_old['Bultos Total']
+    df['Cantidad'] = (df_csv_old['Unidades por Bulto'] * df_csv_old['Bultos Cerrados']) + df_csv_old['Unidades']
     df['Deposito'] = df_csv_old['Deposito']	
     df = df[df["PROVEEDORES"].apply(lambda x: x == 1004)]
     df = df[df["Deposito"].apply(lambda x: x == 1)]
+    df = df[df['TipoDocumento'].apply(lambda x: x != "DE")]
 
 
 
@@ -184,21 +185,15 @@ def create_xlsx_comprobantes_de_pago():
                 f"No se pudo crear el directorio '{directorio_comprobantes_de_pago}': {e}"
             )
     # <=====     CREANDO SOLAPA datos
-
     # CREANDO SOLAPA verificacion =====>
+            
     total_registros = len(df)
     suma_cantidad = df["Cantidad"].sum()
-    # suma_cantidad = "{:,.2f}".format(suma_cantidad).replace(".", ",")
     data = {"IDICADOR": ["CantRegistros", "TotalUnidades"]}
     df_verificacion = pd.DataFrame(data)
     df_verificacion["VALOR"] = [total_registros, suma_cantidad]
     # <===== CREANDO SOLAPA verificacion
 
-    def format_with_comma(value):
-        formatted_value = "{:,.2f}".format(value).replace('.', ',')
-        return formatted_value
-    
-    # df['Cantidad'] = df['Cantidad'].apply(format_with_comma)
 
     # Convirtiendo DF a XLSX y creando la solapa datos
     if os.access(directorio_comprobantes_de_pago, os.W_OK):

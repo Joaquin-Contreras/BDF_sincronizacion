@@ -31,7 +31,7 @@ def generar_archivo_fac_sin_datos():
 
     ## SOLAPA VERIFICACIÓN ==>
     df_verificacion = pd.DataFrame()
-    df_verificacion["IDICADOR"] = ["CantRegistros", "TotalUnidades"]
+    df_verificacion["IDICADOR"] = ["CantRegistros", "TotalCajas"]
     df_verificacion["VALOR"] = [0, 0]
 
     # Convirtiendo DF a XLSX

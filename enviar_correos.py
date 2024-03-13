@@ -20,11 +20,12 @@ fecha_actual = datetime.now()
 fecha_formateada = (fecha_actual - timedelta(days=1)).strftime("%d de %B de %Y")
 diferencia_dias = (fecha_actual - fecha_inicio).days
 valorIdPaquete = diferencia_dias + 1
+
 json_inv = None
 json_mc = None
 json_vta = None
 
-def enviar_correos(destinatario):
+def enviar_correos(destinatario, data):
     try:
         # Configuración del servidor SMTP
         smtp_server = 'smtp.gmail.com'
@@ -44,7 +45,7 @@ def enviar_correos(destinatario):
         msg['Subject'] = 'Resultado sincronización diaria BDF ' + fecha_formateada
 
         # Cuerpo del mensaje
-        body = f"Este es un correo de prueba archivos adjuntos, también las respuestas son las siguientes: Respuesta INV: {json_inv}, Respuesta MC: {json_mc}, Respuesta VTA: {json_vta}"
+        body = f"Respuestas {data}"
         
         msg.attach(MIMEText(body, 'plain'))
 
@@ -52,6 +53,8 @@ def enviar_correos(destinatario):
             "./XLSX_inventario_done/mendizabal_inv_"+fecha_archivos+".xlsx",
             "./XLSX_comprobantes_done/mendizabal_vta_"+fecha_archivos+".xlsx",
             "./XLSX_master_clientes_done/mendizabal_mc_"+fecha_archivos+".xlsx",
+            # "./XLSX_inventario_done_scj/mendizabal_inv_"+fecha_archivos+".xlsx",
+            # "./XLSX_fac_done/mendizabal_fac_"+fecha_archivos+".xlsx",
             "./respuestas/respuesta.xlsx"
         ]
 

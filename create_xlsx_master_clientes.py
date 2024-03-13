@@ -1,6 +1,3 @@
-import pytz
-import schedule
-from playwright.sync_api import sync_playwright
 from datetime import datetime, timedelta
 import pandas as pd
 import os
@@ -76,6 +73,7 @@ def create_xlsx_master_clientes():
         "TIERRA DEL FUEGO": 94,
     }
 
+
     # Creando Solapa Datos ========>
     df_clientes_datos = pd.read_excel(
         "./CSV_clientes_old/mendizabal_mc_" + fecha_archivos + "_1.xlsx",
@@ -97,7 +95,7 @@ def create_xlsx_master_clientes():
     )
 
     df = pd.DataFrame()
-    df["IdDistribuidor"] = ["40379573"] * len(df_clientes_datos)
+    df["IdDistribuidor"] = [40379573] * len(df_clientes_datos)
 
     df["IdPaquete"] = valorIdPaquete
 

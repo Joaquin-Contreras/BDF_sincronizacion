@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 import pandas as pd
 import uuid
-import inventario_bdf_post, master_clientes_bdf_post, ventas_bdf_post, enviar_correos
-
+from POST import inventario_bdf_post, master_clientes_bdf_post, ventas_bdf_post, fac_scj_post, inventario_scj_post
+import enviar_correos
 
 id_unico = uuid.uuid4()
 fecha_archivos_menos_un_dia_str  = datetime.now()
@@ -24,12 +24,28 @@ json_vta = None
 
 value = "Basic bWVuZGl6YWJhbDptZW5kaXphYmFsOTg1NA=="
 
+data = None
+print(fecha_archivos)
 
-def generar_archivo_respuesta():
+def generar_archivo_respuesta_BDF():
 
-    json_inv = inventario_bdf_post.inventario_bdf_post()
-    json_mc = master_clientes_bdf_post.master_clientes_bdf_post()
-    json_vta = ventas_bdf_post.ventas_bdf_post()
+    urls_testing = {
+        "inv_bdf": 'https://dev.BDFdistribuidores.com/ws/inv',
+        "mc_bdf": 'https://dev.BDFdistribuidores.com/ws/mc',
+        "vta_bdf": 'https://dev.BDFdistribuidores.com/ws/vta'
+    }
+    urls = {        
+        "inv_bdf": "https://mendizabal.BDFdistribuidores.com/ws/inv",
+        "mc_bdf": "https://mendizabal.BDFdistribuidores.com/ws/mc",
+        "vta_bdf": "https://mendizabal.BDFdistribuidores.com/ws/vta"
+    }
+
+    print("INVENTARIO_BDF")
+    json_inv = inventario_bdf_post.inventario_bdf_post(urls_testing)
+    print("MASTER_CLIENTES_BDF")
+    json_mc = master_clientes_bdf_post.master_clientes_bdf_post(urls_testing)
+    print("VENTAS_BDF")
+    json_vta = ventas_bdf_post.ventas_bdf_post(urls_testing)
 
     df = pd.DataFrame()
 
@@ -57,7 +73,7 @@ def generar_archivo_respuesta():
     df = pd.DataFrame([data])
 
     # Nombre del archivo de Excel
-    archivo_excel = './respuestas/respuesta.xlsx'
+    archivo_excel = './respuestas/respuesta_BDF.xlsx'
 
     # Crear un DataFrame de ejemplo (reemplaza esto con tus datos)
     nuevo_registro = df
@@ -74,8 +90,63 @@ def generar_archivo_respuesta():
     df_actualizado.to_excel(archivo_excel, index=False)
 
 
+def generar_archivo_respuesta_SCJ():
+
+    urls_testing = {
+        "fac_scj": "http://developers.dinesys2.com/ws/fac",
+        "inv_scj": "http://developers.dinesys2.com/ws/inventario"
+    }
+    urls = {
+        "fac_scj": "http://mendizabal.dinesys2.com/ws/fac",
+        "inv_scj": "http://mendizabal.dinesys2.com/ws/inventario"   
+    }
+
+    print("FACTURACION_SCJ")
+    json_fac = fac_scj_post.fac_scj_post(urls_testing)
+    print("INVENTARIO_SCJ")
+    json_inv_scj = inventario_scj_post.inventario_scj_post(urls_testing)
+
+    # df = pd.DataFrame()
 
 
-generar_archivo_respuesta()
-# enviar_correos.enviar_correos("joacontre0@gmail.com")
-# schedule.every().day.at(hora_programada.strftime("%H:%M")).do(generar_archivo_respuesta)
+    # # Crear un diccionario con los datos que queremos asignar al DataFrame
+    # data = {
+    #     'Id': id_unico,
+    #     'Fecha': fecha_datetime,
+    #     'Hora': hora_formateada,
+    #     'respuesta_fac_status': json_fac.get('success', 'N/A'),
+    #     'respuesta_fac_id': json_fac.get('id', 'N/A'),
+    #     'respuesta_fac_detail': json_fac.get('detail', 'N/A'),
+    #     'respuesta_fac_message': json_fac.get('message', 'N/A'),
+    #     'respuesta_inv_scj_status': json_inv_scj.get('success', 'N/A'),
+    #     'respuesta_inv_scj_id': json_inv_scj.get('id', 'N/A'),
+    #     'respuesta_inv_scj_detail': json_inv_scj.get('detail', 'N/A'),
+    #     'respuesta_inv_scj_message': json_inv_scj.get('message', 'N/A'),
+    # }
+
+    # # Crear el DataFrame con una sola fila a partir del diccionario
+    # df = pd.DataFrame([data])
+
+    # # Nombre del archivo de Excel
+    # archivo_excel = './respuestas/respuesta_SCJ.xlsx'
+
+    # # Crear un DataFrame de ejemplo (reemplaza esto con tus datos)
+    # nuevo_registro = df
+
+    # # Intenta leer el archivo existente
+    # try:
+    #     df_existente = pd.read_excel(archivo_excel)
+    #     # Agrega el nuevo registro al DataFrame existente
+    #     df_actualizado = pd.concat([df_existente, nuevo_registro], ignore_index=True)
+    # except FileNotFoundError:  # Si el archivo no existe, crea uno nuevo con el registro
+    #     df_actualizado = nuevo_registro
+
+    # # Escribe el DataFrame actualizado en el archivo de Excel
+    # df_actualizado.to_excel(archivo_excel, index=False)   
+
+
+
+generar_archivo_respuesta_BDF()
+generar_archivo_respuesta_SCJ()
+
+# enviar_correos.enviar_correos("joacontre0@gmail.com", data)

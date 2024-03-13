@@ -480,6 +480,14 @@
   ('contextlib', 'C:\\Python312\\Lib\\contextlib.py', 'PYMODULE'),
   ('contextvars', 'C:\\Python312\\Lib\\contextvars.py', 'PYMODULE'),
   ('copy', 'C:\\Python312\\Lib\\copy.py', 'PYMODULE'),
+  ('create_xlsx_comprobantes_de_pago',
+   'C:\\Users\\joaco\\Nueva '
+   'carpeta\\BDF_sincronizacion_github\\BDF_sincronizacion\\create_xlsx_comprobantes_de_pago.py',
+   'PYMODULE'),
+  ('create_xlsx_master_clientes',
+   'C:\\Users\\joaco\\Nueva '
+   'carpeta\\BDF_sincronizacion_github\\BDF_sincronizacion\\create_xlsx_master_clientes.py',
+   'PYMODULE'),
   ('csv', 'C:\\Python312\\Lib\\csv.py', 'PYMODULE'),
   ('ctypes', 'C:\\Python312\\Lib\\ctypes\\__init__.py', 'PYMODULE'),
   ('ctypes._aix', 'C:\\Python312\\Lib\\ctypes\\_aix.py', 'PYMODULE'),
@@ -605,6 +613,26 @@
   ('fnmatch', 'C:\\Python312\\Lib\\fnmatch.py', 'PYMODULE'),
   ('fractions', 'C:\\Python312\\Lib\\fractions.py', 'PYMODULE'),
   ('ftplib', 'C:\\Python312\\Lib\\ftplib.py', 'PYMODULE'),
+  ('generar_archivo_articulos',
+   'C:\\Users\\joaco\\Nueva '
+   'carpeta\\BDF_sincronizacion_github\\BDF_sincronizacion\\generar_archivo_articulos.py',
+   'PYMODULE'),
+  ('generar_archivo_clientes_dinesys',
+   'C:\\Users\\joaco\\Nueva '
+   'carpeta\\BDF_sincronizacion_github\\BDF_sincronizacion\\generar_archivo_clientes_dinesys.py',
+   'PYMODULE'),
+  ('generar_archivo_fac_sin_datos',
+   'C:\\Users\\joaco\\Nueva '
+   'carpeta\\BDF_sincronizacion_github\\BDF_sincronizacion\\generar_archivo_fac_sin_datos.py',
+   'PYMODULE'),
+  ('generar_archivo_facturacion_scj',
+   'C:\\Users\\joaco\\Nueva '
+   'carpeta\\BDF_sincronizacion_github\\BDF_sincronizacion\\generar_archivo_facturacion_scj.py',
+   'PYMODULE'),
+  ('get_xlsx_without_data_comprobantes_de_pago',
+   'C:\\Users\\joaco\\Nueva '
+   'carpeta\\BDF_sincronizacion_github\\BDF_sincronizacion\\get_xlsx_without_data_comprobantes_de_pago.py',
+   'PYMODULE'),
   ('getopt', 'C:\\Python312\\Lib\\getopt.py', 'PYMODULE'),
   ('getpass', 'C:\\Python312\\Lib\\getpass.py', 'PYMODULE'),
   ('gettext', 'C:\\Python312\\Lib\\gettext.py', 'PYMODULE'),
@@ -3765,10 +3793,6 @@
   ('random', 'C:\\Python312\\Lib\\random.py', 'PYMODULE'),
   ('rlcompleter', 'C:\\Python312\\Lib\\rlcompleter.py', 'PYMODULE'),
   ('runpy', 'C:\\Python312\\Lib\\runpy.py', 'PYMODULE'),
-  ('schedule',
-   'C:\\Users\\joaco\\Nueva '
-   'carpeta\\BDF_sincronizacion_github\\BDF_sincronizacion\\venv\\Lib\\site-packages\\schedule\\__init__.py',
-   'PYMODULE'),
   ('secrets', 'C:\\Python312\\Lib\\secrets.py', 'PYMODULE'),
   ('selectors', 'C:\\Python312\\Lib\\selectors.py', 'PYMODULE'),
   ('setuptools',

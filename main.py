@@ -1,5 +1,3 @@
-import pytz
-import schedule
 from playwright.sync_api import sync_playwright
 from datetime import datetime, timedelta
 import os
@@ -8,6 +6,15 @@ import create_xlsx_comprobantes_de_pago
 import generar_archivo_facturacion_scj
 import get_xlsx_without_data_comprobantes_de_pago
 import generar_archivo_fac_sin_datos
+import generar_archivo_articulos
+import subprocess
+import generar_archivo_clientes_dinesys
+
+try:
+    subprocess.run(["C:/Users/joaco/AppData/Roaming/npm/playwright.cmd", "install"], check=True)
+    print("Navegadores descargados correctamente.")
+except subprocess.CalledProcessError as e:
+    print(f"Error al descargar los navegadores: {e}")
 
 
 fecha_inicio = datetime(2024, 2, 15)  # La fecha de inicio es el 15/2/24
@@ -18,17 +25,6 @@ fecha_formateada = (fecha_actual - timedelta(days=1)).strftime("%d de %B de %Y")
 diferencia_dias = (fecha_actual - fecha_inicio).days
 valorIdPaquete = diferencia_dias + 1
 
-
-# Obtener la zona horaria de Argentina
-zona_horaria_argentina = pytz.timezone("America/Argentina/Buenos_Aires")
-
-# Calcular la hora local actual en Argentina
-hora_actual_argentina = datetime.now(zona_horaria_argentina)
-
-# Calcular la hora a la que queremos programar la tarea
-hora_programada = hora_actual_argentina.replace(
-    hour=22, minute=4, second=30, microsecond=0
-)
 
 
 months = {
@@ -53,7 +49,7 @@ if month in months:
 if fecha_real[0] == "0":
     fecha_real = fecha_real[1:]
 
-
+dia_de_la_semana = fecha_actual.strftime("%A")
 
 
 fecha_archivos_menos_un_dia_str = datetime.now()
@@ -62,13 +58,6 @@ fecha_archivos = fecha_archivos_menos_un_dia.strftime("%Y%m%d")
 
 print(fecha_archivos)
 print(fecha_real)
-
-
-
-
-
-
-
 
 def conseguir_comprobantes_de_pago_y_fac_bdf_scj():
     with sync_playwright() as p:
@@ -111,12 +100,18 @@ def conseguir_comprobantes_de_pago_y_fac_bdf_scj():
         toast_item_exists = False
         es_dia_sin_datos = False
 
+        # Encontrar el elemento utilizando XPath
+        elemento = page.locator("//div[@col-id='numerocomp']")
+
         try:
             toast_item_exists = page.inner_text("p-toastitem") is not None
         except:
             pass
 
         page.wait_for_timeout(10000)
+
+        if dia_de_la_semana == "Monday" or dia_de_la_semana == "Saturday":
+            es_dia_sin_datos = True
 
         if not toast_item_exists:
             # Exportar
@@ -157,7 +152,7 @@ def conseguir_comprobantes_de_pago_y_fac_bdf_scj():
 def conseguir_clientes():
     with sync_playwright() as p:
         browser = p.chromium.launch(
-            headless=False
+            headless=True
         )  # Cambiar a False SOLO en testing, en deploy tiene que estar en True
         page = browser.new_page()
         context = browser.new_context()
@@ -204,8 +199,67 @@ def conseguir_clientes():
         browser.close()
 
     create_xlsx_master_clientes.create_xlsx_master_clientes()
+    generar_archivo_clientes_dinesys.generar_archivo_clientes_dinesys()
+
+def conseguir_inv_dinesys():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(
+            headless=False
+        )  # Cambiar a False SOLO en testing, en deploy tiene que estar en True
+        page = browser.new_page()
+        context = browser.new_context()
+        page.goto("http://appserver26.dyndns.org:8081/#/login")
+        page.wait_for_load_state("domcontentloaded")
+        try:
+            page.wait_for_selector(
+                "(//*[contains(text(),'Actualizar')])[2]", timeout=50000
+            )
+            page.click("(//*[contains(text(),'Actualizar')])[2]", timeout=50000)
+        except:
+            print("No hay botón reinicio")
+        page.wait_for_timeout(5000)
+        page.fill("//input[@id='username1']", "sebaf")
+        page.fill("//input[@id='pass']", "12345678")
+        page.click("//button[@label='INICIAR SESIÓN']")
+        page.wait_for_timeout(5000)
+
+        try:
+            page.click("//button[@class='btn btn-default']")
+        except:
+            pass
+
+        page.click("//a[@class='menu-button']")
+        page.wait_for_timeout(1000)
+        page.click("(//a[contains(@class,'p-ripple p-element ng-tns-c5')])[2]")
+        page.wait_for_timeout(1000)
+        page.click("(//a[contains(@class,'p-ripple p-element ng-tns-c5')])[6]")
+        page.wait_for_timeout(4000)
+
+        #Exportar
+        with page.expect_download() as download_info:
+            page.click("//span[@mattooltip='Exportar artículos']")
+            page.wait_for_timeout(4000)
+            page.fill("//input[@formcontrolname='buscador']", "scj")
+            page.wait_for_timeout(1500)
+            page.click("//div[contains(text(),'SCJ')]")
+            page.click("//button[@class='btn btn-md btn-primary']")
+        
+        download = download_info.value
+        download.save_as("./XLSX_inv_dinesys_old/inv_dinesys_old" + fecha_archivos + ".xlsx")
+
+        browser.close()
+
+        generar_archivo_articulos.generar_archivo_articulos()
 
 
 
 conseguir_comprobantes_de_pago_y_fac_bdf_scj()
-# conseguir_clientes()
+conseguir_clientes()
+conseguir_inv_dinesys()
+        
+# create_xlsx_master_clientes.create_xlsx_master_clientes()
+# create_xlsx_comprobantes_de_pago.create_xlsx_comprobantes_de_pago()
+# generar_archivo_facturacion_scj.generar_archivo_facturacion_scj()
+# get_xlsx_without_data_comprobantes_de_pago.get_xlsx_without_data_comprobantes_de_pago()
+# generar_archivo_fac_sin_datos.generar_archivo_fac_sin_datos()
+# generar_archivo_clientes_dinesys.generar_archivo_clientes_dinesys()
