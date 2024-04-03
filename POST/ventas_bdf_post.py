@@ -2,51 +2,103 @@ import requests
 from datetime import datetime, timedelta
 import json
 import pandas as pd
-import uuid
 
 
 
-id_unico = uuid.uuid4()
-fecha_archivos_menos_un_dia_str  = datetime.now()
-fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=1)
-fecha_archivos = fecha_archivos_menos_un_dia.strftime('%Y%m%d')
-fecha_datetime = pd.to_datetime(fecha_archivos).strftime('%Y-%m-%d')
-hora_actual = datetime.now()
-hora_formateada = hora_actual.strftime('%H-%M-%S')
 
-def ventas_bdf_post(urls):
+
+def ventas_bdf_post(urls, archivos_a_reenviar, dias_a_restar):
+
+    fecha_archivos_menos_un_dia_str  = datetime.now()
+    fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=dias_a_restar)
+    fecha_archivos = fecha_archivos_menos_un_dia.strftime('%Y%m%d')
+
     try:
         url_vta = urls["vta_bdf"]
+        directorio_ventas = "./XLSX_comprobantes_done/"
+        json_response = {"success": False, "message": "No se enviaron archivos", "detail": "No se encontraron archivos para enviar", "id": "0"}
 
-        directorio_mc = "./XLSX_comprobantes_done/"
+        if archivos_a_reenviar:
+            for nombre_archivo in archivos_a_reenviar:
+                archivo_ventas = directorio_ventas + nombre_archivo
 
-        nombre_archivo_ventas = 'mendizabal_vta_'+fecha_archivos+'.xlsx'
+                try:
+                    with open(archivo_ventas, 'rb') as archivo:
+                        # Configurar los datos del archivo
+                        archivos = {'archivo': (nombre_archivo, archivo, 'application/vnd.ms-excel')}
 
-        archivo_ventas = directorio_mc+nombre_archivo_ventas
+                        # Definir el encabezado de autorización
+                        encabezado_autorizacion = {'Authorization': 'Basic bWVuZGl6YWJhbDptZW5kaXphYmFsOTg1NA=='}
 
-        with open(archivo_ventas, 'rb') as archivo:
-            # Configurar los datos del archivo
-            # archivos = {'archivo': (nombre_archivo_ventas, archivo, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
-            archivos = {'archivo': (nombre_archivo_ventas, archivo, 'application/vnd.ms-excel')}
+                        # Enviar la solicitud POST a la API con los archivos y el encabezado de autorización
+                        respuesta = requests.post(url_vta, files=archivos, headers=encabezado_autorizacion)
+                        try:
+                            json_response = json.loads(respuesta.text)
+                        except:
+                            print("Error al cargar el JSON, Reintentando")
 
-            # Definir el encabezado de autorización
-            encabezado_autorizacion = {'Authorization': 'Basic bWVuZGl6YWJhbDptZW5kaXphYmFsOTg1NA=='}
+                        if json_response['success']:
+                            json_response['archivo_reenviado'] = nombre_archivo
+                            print("Archivo reenviado:", nombre_archivo)
+                            print(respuesta.text)
+                            # Eliminar la fila correspondiente del archivo de reenvíos
+                            eliminar_fila_reenvio(nombre_archivo)
+                            break
+                        else:
+                            print("Error: " + json_response['message'])
 
-            # Enviar la solicitud POST a la API con los archivos, los datos y el encabezado de autorización
-            respuesta = requests.post(url_vta, files=archivos, headers=encabezado_autorizacion)
+                except:
+                    print("El archivo que intenta abrir no existe o no está en esa ruta")
+                    break
+        else:
+            print("No hay archivos para reenviar")
 
-            try:
-                json_response = json.loads(respuesta.text)
-            except:
-                print("Error al cargar el JSON FAC, Reintentando")
+        # Intentar enviar el archivo actual
+        try:
+            nombre_archivo_ventas = f'mendizabal_vta_{fecha_archivos}.xlsx'
+            archivo_ventas = directorio_ventas + nombre_archivo_ventas
+
+            trying = 0
+            while trying <= 5:
+                try:
+                    with open(archivo_ventas, 'rb') as archivo:
+                        # Configurar los datos del archivo
+                        archivos = {'archivo': (nombre_archivo_ventas, archivo, 'application/vnd.ms-excel')}
+                        encabezado_autorizacion = {'Authorization': 'Basic bWVuZGl6YWJhbDptZW5kaXphYmFsOTg1NA=='}
+                        respuesta = requests.post(url_vta, files=archivos, headers=encabezado_autorizacion)
+                        try:
+                            json_response = json.loads(respuesta.text)
+                        except:
+                            print("Error al cargar el JSON, Reintentando")
+
+                        if json_response['success']:
+                            print("Archivo DIARIO enviado exitosamente")
+                            print(respuesta.text)
+                            trying = 10
+                            return json_response
+                        else:
+                            print("Error: " + json_response['message'])
+                            trying += 1
+                            print("Reintentando", trying)
+                except:
+                    print("El archivo que intenta abrir no existe o no está en esa ruta")
+                    break
+
+            return json_response
+        except:
+            return {"success": False, "message": "Error al cargar el JSON", "detail": "Error al cargar el JSON", "id": "3"}
+
+    except Exception as e:
+        print(f"Error en la función ventas_bdf_post: {e}")
+        return {"success": False, "message": "Error al cargar el JSON", "detail": str(e), "id": "3"}
 
 
-            if (json_response['success'] == True):
-                print(respuesta.text)
-                return json_response
-            else:
-                print("Error: " + json_response['message'])
-        return json_response
-    except:
-        return {"success": False, "message": "Error al cargar el JSON", "detail": "Error al cargar el JSON", "id":"3"}
-
+def eliminar_fila_reenvio(nombre_archivo):
+    try:
+        archivo_reenvios = 'reenvios/reenvios_BDF.xlsx'
+        df_reenvios = pd.read_excel(archivo_reenvios)
+        df_reenvios = df_reenvios[df_reenvios['nombre_archivo'] != nombre_archivo]
+        df_reenvios.to_excel(archivo_reenvios, index=False)
+        print(f"Fila correspondiente al archivo {nombre_archivo} eliminada del archivo de reenvíos.")
+    except Exception as e:
+        print(f"Error al intentar eliminar la fila correspondiente al archivo {nombre_archivo} del archivo de reenvíos: {e}")

@@ -48,11 +48,16 @@ def generar_archivo_clientes_dinesys():
     "MENDOZA RODOLFO": 1006,
     "AGUIRRE VANESA": 1007,
     "JIMENEZ SOLIS": 1008,
+    "SARA JIMENEZ": 1008,
     "DUERTO GABRIEL": 1011,
+    "GABRIEL D": 1011,
     "NACHO": 1012, # MENDIZABAL JUAN IGNACIO
     "MARCHESE ANDREA": 1018,
     "HEIDEL ROMINA": 1117,
+    "HEIDEL ROMI": 1117,
     "MEDINA ROBERTO": 1118,
+    "ROBERTO M.": 1118,
+    "ROBERTO": 1118,
     "BONICALZI MARIANA": 1125,
     "SOMOZA MARIA SILVINA": 1127,
     "LEONARDO FASSI": 1132,
@@ -91,19 +96,16 @@ def generar_archivo_clientes_dinesys():
     df['Codigo de lista de precios'] = 0
     df['Descuento'] = 0
 
-    df_varios['DEPARTAMENTO'] = df_varios['DEPARTAMENTO'].str.strip()
-    # Fusionar df_clientes_datos y df_localidades en función de "Código Localidad" e "ID"
-    df_merge = pd.merge(df_clientes_datos, df_localidades, left_on='Código Localidad', right_on='Id', how='left')
-    df_merge.rename(columns={'Departamento': 'DEPARTAMENTO'}, inplace=True)
+    df_merged_prov = pd.DataFrame()
+    df_merged_prov["codigo_localidad"] = df_clientes_datos["Código Localidad"]
+    codigo_to_provincia = dict(zip(df_localidades["Id"], df_localidades["Provincia"]))
+    df_merged_prov["Provincia"] = df_merged_prov["codigo_localidad"].map(
+        codigo_to_provincia
+    )
+    localidad_to_codigo_postal = dict(zip(df_localidades["Id"], df_localidades["Código Postal"]))
+    df_merged_prov["CP"] = df_merged_prov["codigo_localidad"].map(localidad_to_codigo_postal)
 
-    # Fusionar df_merge y df_varios en función de "Departamento"
-    df_final = pd.merge(df_merge, df_varios, on='DEPARTAMENTO', how='left')
-
-    # Seleccionar las columnas necesarias
-    result = df_final[['Código Localidad', 'DEPARTAMENTO', 'CP']]
-
-
-    df['Código Localidad'] = result['CP']
+    df['Código Localidad'] = df_merged_prov['CP']
 
 
     if not os.path.exists(directorio_clientes):

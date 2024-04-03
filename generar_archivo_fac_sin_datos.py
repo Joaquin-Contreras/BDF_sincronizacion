@@ -1,14 +1,16 @@
 from datetime import datetime, timedelta
 import pandas as pd
 import os
+import subir_archivos_a_pagina
 
 
-fecha_archivos_menos_un_dia_str = datetime.now()
-fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=1)
-fecha_archivos = fecha_archivos_menos_un_dia.strftime("%Y%m%d")
+def generar_archivo_fac_sin_datos(dias_a_restar):
+
+    fecha_archivos_menos_un_dia_str = datetime.now()
+    fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=dias_a_restar)
+    fecha_archivos = fecha_archivos_menos_un_dia.strftime("%Y%m%d")
 
 
-def generar_archivo_fac_sin_datos():
 
     directorio_fac = "./XLSX_fac_done/"
     nombre_archivo_fac = "mendizabal_fac_" + fecha_archivos + ".xlsx"
@@ -60,3 +62,7 @@ def generar_archivo_fac_sin_datos():
         print(
             f"No tienes permisos para escribir en el directorio '{directorio_fac}'."
         )
+
+    ruta_archivo = ruta_archivo=(directorio_fac + "/" + nombre_archivo_fac)
+    nombre_carpeta = directorio_fac.replace("/","").replace(".","")
+    subir_archivos_a_pagina.subir_archivos_a_pagina(ruta_archivo=ruta_archivo, nombre_carpeta=nombre_carpeta)

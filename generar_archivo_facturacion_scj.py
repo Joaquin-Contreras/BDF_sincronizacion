@@ -2,43 +2,67 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 import os
+import subir_archivos_a_pagina
+import generar_archivo_fac_sin_datos
 
 
-fecha_inicio = datetime(2024, 2, 15)  # La fecha de inicio es el 15/2/24
-fecha_actual = datetime.now()
-# fecha_formateada = (fecha_actual).strftime("%d de %B de %Y")
-# La línea 8 está solamente para hacer pruebas, la línea 6 es la correspondiente
-fecha_formateada = (fecha_actual - timedelta(days=1)).strftime("%d de %B de %Y")
-diferencia_dias = (fecha_actual - fecha_inicio).days
-valorIdPaquete = diferencia_dias + 1
+def generar_archivo_facturacion_scj(dias_a_restar):
 
-months = {
-    "January": "enero",
-    "February": "febrero",
-    "March": "marzo",
-    "April": "abril",
-    "May": "mayo",
-    "June": "junio",
-    "August": "agosto",
-    "September": "septiembre",
-    "October": "octubre",
-    "November": "noviembre",
-    "December": "diciembre",
-}
-month = fecha_formateada.split(" de ")[1].split(" de ")[0]
+    fecha_inicio = datetime(2024, 2, 15)  # La fecha de inicio es el 15/2/24
+    fecha_actual = datetime.now()
 
-if month in months:
-    mes = months[month]
-    fecha_real = fecha_formateada.replace(month, mes)
+    fecha_formateada = (fecha_actual - timedelta(days=dias_a_restar)).strftime("%d de %B de %Y")
+    diferencia_dias = (fecha_actual - fecha_inicio).days
+    valorIdPaquete = diferencia_dias + 1
 
-if fecha_real[0] == "0":
-    fecha_real = fecha_real[1:]
+    months = {
+        "January": "enero",
+        "February": "febrero",
+        "March": "marzo",
+        "April": "abril",
+        "May": "mayo",
+        "June": "junio",
+        "August": "agosto",
+        "September": "septiembre",
+        "October": "octubre",
+        "November": "noviembre",
+        "December": "diciembre",
+    }
+    month = fecha_formateada.split(" de ")[1].split(" de ")[0]
 
-fecha_archivos_menos_un_dia_str = datetime.now()
-fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=1)
-fecha_archivos = fecha_archivos_menos_un_dia.strftime("%Y%m%d")
+    if month in months:
+        mes = months[month]
+        fecha_real = fecha_formateada.replace(month, mes)
 
-def generar_archivo_facturacion_scj():
+    if fecha_real[0] == "0":
+        fecha_real = fecha_real[1:]
+
+    fecha_archivos_menos_un_dia_str = datetime.now()
+    fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=dias_a_restar)
+    fecha_archivos = fecha_archivos_menos_un_dia.strftime("%Y%m%d")
+
+
+
+
+
+    ID_VENDEDORES = {
+        1: 1001,
+        3: 1003,
+        6: 1006,
+        7: 1007,
+        8: 1008,
+        11: 1011,
+        12: 1012,
+        18: 1018,
+        117: 1117,
+        118: 1118,
+        125: 1125,
+        127: 1127,
+        132: 1132,
+        135: 1135,
+        138: 1138,
+    }
+
 
     directorio_fac = "./XLSX_fac_done/"
     nombre_archivo_fac = "mendizabal_fac_" + fecha_archivos + ".xlsx"
@@ -50,12 +74,15 @@ def generar_archivo_facturacion_scj():
             encoding="ISO-8859-1",
             delimiter="\t",
         )
-    except UnicodeDecodeError:
-        df_comprobantes_old = pd.read_csv(
-            "./CSV_comprobantes_old/mendizabal_vta_" + fecha_real + ".csv",
-            encoding="cp1252",
-            delimiter="\t",
-        )
+    except:
+        try:
+            df_comprobantes_old = pd.read_csv(
+                "./CSV_comprobantes_old/mendizabal_vta_" + fecha_real + ".csv",
+                encoding="cp1252",
+                delimiter="\t",
+            )
+        except:
+            return generar_archivo_fac_sin_datos.generar_archivo_fac_sin_datos(dias_a_restar=dias_a_restar)
 
     df = pd.DataFrame()
     # valores_no_deseados = ['ANTICIPO', 'FALTANTE DE LIQUIDACION', 'RECIBO']
@@ -107,6 +134,7 @@ def generar_archivo_facturacion_scj():
     df['Deposito'] = df_comprobantes_old['Deposito']
     df = df[df_comprobantes_old["Deposito"].apply(lambda x: x == 1)]
     df = df[df_comprobantes_old["PROVEEDORES"].apply(lambda x: (x == 1003) or (x == 1061))]
+    df['IdVendedor'] = df['IdVendedor'].apply(lambda x: ID_VENDEDORES[x])
 
     df.drop(columns=['Deposito'], inplace=True)
     ## SOLAPA VERIFICACIÓN ==>
@@ -143,3 +171,7 @@ def generar_archivo_facturacion_scj():
         print(
             f"No tienes permisos para escribir en el directorio '{directorio_fac}'."
         )
+
+    ruta_archivo = ruta_archivo=(directorio_fac + "/" + nombre_archivo_fac)
+    nombre_carpeta = directorio_fac.replace("/","").replace(".","")
+    subir_archivos_a_pagina.subir_archivos_a_pagina(ruta_archivo=ruta_archivo, nombre_carpeta=nombre_carpeta)

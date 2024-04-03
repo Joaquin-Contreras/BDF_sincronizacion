@@ -7,21 +7,19 @@ import generar_archivo_facturacion_scj
 import get_xlsx_without_data_comprobantes_de_pago
 import generar_archivo_fac_sin_datos
 import generar_archivo_articulos
-import subprocess
 import generar_archivo_clientes_dinesys
+import enviar_correos
+import subprocess
+import time
 
-try:
-    subprocess.run(["C:/Users/joaco/AppData/Roaming/npm/playwright.cmd", "install"], check=True)
-    print("Navegadores descargados correctamente.")
-except subprocess.CalledProcessError as e:
-    print(f"Error al descargar los navegadores: {e}")
+dias_a_restar = 1
 
 
 fecha_inicio = datetime(2024, 2, 15)  # La fecha de inicio es el 15/2/24
 fecha_actual = datetime.now()
 # fecha_formateada = (fecha_actual).strftime("%d de %B de %Y")
 # La línea 8 está solamente para hacer pruebas, la línea 6 es la correspondiente
-fecha_formateada = (fecha_actual - timedelta(days=1)).strftime("%d de %B de %Y")
+fecha_formateada = (fecha_actual - timedelta(days=dias_a_restar)).strftime("%d de %B de %Y")
 diferencia_dias = (fecha_actual - fecha_inicio).days
 valorIdPaquete = diferencia_dias + 1
 
@@ -49,11 +47,11 @@ if month in months:
 if fecha_real[0] == "0":
     fecha_real = fecha_real[1:]
 
-dia_de_la_semana = fecha_actual.strftime("%A")
+dia_de_la_semana = (fecha_actual - timedelta(days=dias_a_restar)).strftime("%A")
 
 
 fecha_archivos_menos_un_dia_str = datetime.now()
-fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=1)
+fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=dias_a_restar)
 fecha_archivos = fecha_archivos_menos_un_dia.strftime("%Y%m%d")
 
 print(fecha_archivos)
@@ -91,7 +89,7 @@ def conseguir_comprobantes_de_pago_y_fac_bdf_scj():
         # Entrar a comprobantes de pago <=
         # Seleccionar Fecha =>
         page.click("(//mat-datepicker-toggle)[1]")
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(3000)
         page.click("//button[@aria-label='" + fecha_real + "']")
         page.wait_for_timeout(2000)
         # Seleccionar Fecha <=
@@ -100,9 +98,6 @@ def conseguir_comprobantes_de_pago_y_fac_bdf_scj():
         toast_item_exists = False
         es_dia_sin_datos = False
 
-        # Encontrar el elemento utilizando XPath
-        elemento = page.locator("//div[@col-id='numerocomp']")
-
         try:
             toast_item_exists = page.inner_text("p-toastitem") is not None
         except:
@@ -110,8 +105,9 @@ def conseguir_comprobantes_de_pago_y_fac_bdf_scj():
 
         page.wait_for_timeout(10000)
 
-        if dia_de_la_semana == "Monday" or dia_de_la_semana == "Saturday":
+        if dia_de_la_semana == "Sunday":
             es_dia_sin_datos = True
+            print("No hay datos para el dia" + " " + fecha_real)
 
         if not toast_item_exists:
             # Exportar
@@ -141,11 +137,11 @@ def conseguir_comprobantes_de_pago_y_fac_bdf_scj():
 
         browser.close()
     if not es_dia_sin_datos:
-        create_xlsx_comprobantes_de_pago.create_xlsx_comprobantes_de_pago()
-        generar_archivo_facturacion_scj.generar_archivo_facturacion_scj()
+        create_xlsx_comprobantes_de_pago.create_xlsx_comprobantes_de_pago(dias_a_restar=dias_a_restar)
+        generar_archivo_facturacion_scj.generar_archivo_facturacion_scj(dias_a_restar=dias_a_restar)
     else:
-        get_xlsx_without_data_comprobantes_de_pago.get_xlsx_without_data_comprobantes_de_pago()
-        generar_archivo_fac_sin_datos.generar_archivo_fac_sin_datos()
+        get_xlsx_without_data_comprobantes_de_pago.get_xlsx_without_data_comprobantes_de_pago(dias_a_restar=dias_a_restar)
+        generar_archivo_fac_sin_datos.generar_archivo_fac_sin_datos(dias_a_restar=dias_a_restar)
 
 
 
@@ -199,12 +195,12 @@ def conseguir_clientes():
         browser.close()
 
     create_xlsx_master_clientes.create_xlsx_master_clientes()
-    generar_archivo_clientes_dinesys.generar_archivo_clientes_dinesys()
+    # generar_archivo_clientes_dinesys.generar_archivo_clientes_dinesys()
 
 def conseguir_inv_dinesys():
     with sync_playwright() as p:
         browser = p.chromium.launch(
-            headless=False
+            headless=True
         )  # Cambiar a False SOLO en testing, en deploy tiene que estar en True
         page = browser.new_page()
         context = browser.new_context()
@@ -252,14 +248,21 @@ def conseguir_inv_dinesys():
         generar_archivo_articulos.generar_archivo_articulos()
 
 
-
 conseguir_comprobantes_de_pago_y_fac_bdf_scj()
 conseguir_clientes()
-conseguir_inv_dinesys()
+# conseguir_inv_dinesys()
         
 # create_xlsx_master_clientes.create_xlsx_master_clientes()
-# create_xlsx_comprobantes_de_pago.create_xlsx_comprobantes_de_pago()
-# generar_archivo_facturacion_scj.generar_archivo_facturacion_scj()
-# get_xlsx_without_data_comprobantes_de_pago.get_xlsx_without_data_comprobantes_de_pago()
-# generar_archivo_fac_sin_datos.generar_archivo_fac_sin_datos()
+# create_xlsx_comprobantes_de_pago.create_xlsx_comprobantes_de_pago(dias_a_restar=dias_a_restar)
+# generar_archivo_facturacion_scj.generar_archivo_facturacion_scj(dias_a_restar=dias_a_restar)
+# get_xlsx_without_data_comprobantes_de_pago.get_xlsx_without_data_comprobantes_de_pago(dias_a_restar)
+# generar_archivo_fac_sin_datos.generar_archivo_fac_sin_datos(dias_a_restar)
 # generar_archivo_clientes_dinesys.generar_archivo_clientes_dinesys()
+# create_xlsx_master_clientes.create_xlsx_master_clientes()
+
+enviar_correos.enviar_correos("joacontre0@gmail.com", "MAIN.PY")
+enviar_correos.enviar_correos("sebaf@jjmendizabal.com.ar", "MAIN.PY")
+        
+time.sleep(5)
+script_path = "C:/Users/SebastianFuhr/Desktop/Dashboard_sincro/actualizar_repo.sh"
+subprocess.run(["bash", script_path], shell=True)

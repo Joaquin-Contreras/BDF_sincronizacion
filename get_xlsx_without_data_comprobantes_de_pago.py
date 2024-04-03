@@ -2,21 +2,22 @@ from datetime import datetime, timedelta
 import pandas as pd
 import os
 import re
+import subir_archivos_a_pagina
 
 
-fecha_archivos_menos_un_dia_str = datetime.now()
-fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=1)
-fecha_archivos = fecha_archivos_menos_un_dia.strftime("%Y%m%d")
+def get_xlsx_without_data_comprobantes_de_pago(dias_a_restar):
 
-directorio_comprobantes_de_pago = "./XLSX_comprobantes_done"
+    fecha_archivos_menos_un_dia_str = datetime.now()
+    fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=dias_a_restar)
+    fecha_archivos = fecha_archivos_menos_un_dia.strftime("%Y%m%d")
 
-nombre_archivo_comprobantes = re.sub(
-    r"\s+", "_", "mendizabal_vta_" + fecha_archivos + ".xlsx"
-)
+    directorio_comprobantes_de_pago = "./XLSX_comprobantes_done"
+
+    nombre_archivo_comprobantes = re.sub(
+        r"\s+", "", "mendizabal_vta_" + fecha_archivos + ".xlsx"
+    )
 
 
-
-def get_xlsx_without_data_comprobantes_de_pago():
     df = pd.DataFrame(
         columns=[
             "NroComprobante",
@@ -57,3 +58,7 @@ def get_xlsx_without_data_comprobantes_de_pago():
         print(
             f"No tienes permisos para escribir en el directorio '{directorio_comprobantes_de_pago}'."
         )
+
+    ruta_archivo = ruta_archivo=(directorio_comprobantes_de_pago + "/" + nombre_archivo_comprobantes)
+    nombre_carpeta = directorio_comprobantes_de_pago.replace("/","").replace(".","")
+    subir_archivos_a_pagina.subir_archivos_a_pagina(ruta_archivo=ruta_archivo, nombre_carpeta=nombre_carpeta)

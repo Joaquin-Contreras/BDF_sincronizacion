@@ -2,19 +2,21 @@ from datetime import datetime, timedelta
 import pandas as pd
 import os
 import re
+import subir_archivos_a_pagina
 
 
 fecha_inicio = datetime(2024, 2, 15)  # La fecha de inicio es el 15/2/24
 fecha_actual = datetime.now()
-# fecha_formateada = (fecha_actual).strftime("%d de %B de %Y")
-# La línea 8 está solamente para hacer pruebas, la línea 6 es la correspondiente
-fecha_formateada = (fecha_actual - timedelta(days=1)).strftime("%d de %B de %Y")
+
+dias_a_restar = 1
+
+fecha_formateada = (fecha_actual - timedelta(days=dias_a_restar)).strftime("%d de %B de %Y")
 diferencia_dias = (fecha_actual - fecha_inicio).days
 valorIdPaquete = diferencia_dias + 1
 
 
 fecha_archivos_menos_un_dia_str = datetime.now()
-fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=1)
+fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=dias_a_restar)
 fecha_archivos = fecha_archivos_menos_un_dia.strftime("%Y%m%d")
 
 
@@ -103,6 +105,7 @@ def create_xlsx_master_clientes():
     df["RazonSocial"] = df_clientes_datos["Razón social"]
     df["BannerText"] = ""
 
+
     df_merged_prov = pd.DataFrame()
     df_merged_prov["codigo_localidad"] = df_clientes_datos["Código Localidad"]
     codigo_to_provincia = dict(zip(df_localidades["Id"], df_localidades["Provincia"]))
@@ -113,18 +116,14 @@ def create_xlsx_master_clientes():
         df_merged_prov["Provincia"].map(provincias), errors="coerce"
     )
 
-    df["Localidad"] = df_clientes_datos["Código Localidad"]
-    df_merged_l = pd.DataFrame()
-    df_merged_l["codigo_localidad"] = df_clientes_datos["Código Localidad"]
-    codigo_to_localidad = dict(zip(df_localidades["Id"], df_localidades["Localidad"]))
-    df_merged_l["Localidad"] = df_merged_l["codigo_localidad"].map(codigo_to_localidad)
-    df["Localidad"] = df["Localidad"].map(df_merged_l["Localidad"])
+    id_to_localidad = dict(zip(df_localidades["Id"], df_localidades["Localidad"]))
+    df_merged_prov['Localidad'] = df_merged_prov['codigo_localidad'].map(id_to_localidad)
+    df["Localidad"] = df_merged_prov["Localidad"]
 
-    df_merged_cp = pd.DataFrame()
-    df_merged_cp["codigo_localidad"] = df_clientes_datos["Código Localidad"]
-    codigo_to_cp = dict(zip(df_localidades["Id"], df_localidades["Código Postal"]))
-    df_merged_cp["CodigoPostal"] = df_merged_cp["codigo_localidad"].map(codigo_to_cp)
-    df["CodigoPostal"] = (df_merged_cp["CodigoPostal"]).astype(int).replace(",", ".")
+
+    localidad_to_codigo_postal = dict(zip(df_localidades["Id"], df_localidades["Código Postal"]))
+    df_merged_prov["CP"] = df_merged_prov["codigo_localidad"].map(localidad_to_codigo_postal)
+    df["CodigoPostal"] = (df_merged_prov["CP"]).astype(int).replace(",", ".")
 
     df["Calle"] = df_clientes_datos["Calle"]
     df["Numero"] = df_clientes_datos["Altura"]
@@ -183,5 +182,9 @@ def create_xlsx_master_clientes():
             print(f"Error al crear el archivo '{nombre_archivo_master_clientes}': {e}")
     else:
         print(
-            f"No tienes permisos para escribir en el directorio '{directorio_master_clientes}'."
+            f"No tenés permisos para escribir en el directorio '{directorio_master_clientes}'."
         )
+
+    ruta_archivo = ruta_archivo=(directorio_master_clientes + "/" + nombre_archivo_master_clientes)
+    nombre_carpeta = directorio_master_clientes.replace("/","").replace(".","")
+    subir_archivos_a_pagina.subir_archivos_a_pagina(ruta_archivo=ruta_archivo, nombre_carpeta=nombre_carpeta)

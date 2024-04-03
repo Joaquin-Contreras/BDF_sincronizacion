@@ -42,31 +42,31 @@ def enviar_correos(destinatario, data):
         msg = MIMEMultipart()
         msg['From'] = 'joacontre0@gmail.com'
         msg['To'] = destinatario
-        msg['Subject'] = 'Resultado sincronización diaria BDF ' + fecha_formateada
+        msg['Subject'] = 'ENVÍO DE ARCHIVOS'
 
         # Cuerpo del mensaje
-        body = f"Respuestas {data}"
+        body = f"HOLA, {data} EJECUTADO EXITOSAMENTE"
         
         msg.attach(MIMEText(body, 'plain'))
 
-        archivos_adjuntos = [
-            "./XLSX_inventario_done/mendizabal_inv_"+fecha_archivos+".xlsx",
-            "./XLSX_comprobantes_done/mendizabal_vta_"+fecha_archivos+".xlsx",
-            "./XLSX_master_clientes_done/mendizabal_mc_"+fecha_archivos+".xlsx",
-            # "./XLSX_inventario_done_scj/mendizabal_inv_"+fecha_archivos+".xlsx",
-            # "./XLSX_fac_done/mendizabal_fac_"+fecha_archivos+".xlsx",
-            "./respuestas/respuesta.xlsx"
-        ]
+        # archivos_adjuntos = [
+        #     "./XLSX_inventario_done/mendizabal_inv_"+fecha_archivos+".xlsx",
+        #     "./XLSX_comprobantes_done/mendizabal_vta_"+fecha_archivos+".xlsx",
+        #     "./XLSX_master_clientes_done/mendizabal_mc_"+fecha_archivos+".xlsx",
+        #     # "./XLSX_inventario_done_scj/mendizabal_inv_"+fecha_archivos+".xlsx",
+        #     # "./XLSX_fac_done/mendizabal_fac_"+fecha_archivos+".xlsx",
+        #     "./respuestas/respuesta.xlsx"
+        # ]
 
-        for archivo in archivos_adjuntos:
-            attachment = open(archivo, 'rb')
+        # for archivo in archivos_adjuntos:
+        #     attachment = open(archivo, 'rb')
 
-            part = MIMEBase('application', 'octet-stream')
-            part.set_payload((attachment).read())
-            encoders.encode_base64(part)
-            part.add_header('Content-Disposition', f'attachment; filename= {archivo}')
+        #     part = MIMEBase('application', 'octet-stream')
+        #     part.set_payload((attachment).read())
+        #     encoders.encode_base64(part)
+        #     part.add_header('Content-Disposition', f'attachment; filename= {archivo}')
             
-            msg.attach(part)
+        #     msg.attach(part)
 
         # Enviar correo electrónico
         server.send_message(msg)

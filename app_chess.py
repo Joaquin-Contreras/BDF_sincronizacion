@@ -1,4 +1,4 @@
-from playwright.sync_api import sync_playwright
+# from playwright.sync_api import sync_playwright
 import pyautogui
 import time
 import cv2
@@ -7,20 +7,24 @@ from datetime import datetime, timedelta
 import pandas as pd
 import os
 import re
-import time
+import enviar_correos
+import subprocess
+import subir_archivos_a_pagina
 
 pyautogui.FAILSAFE = False
 
 fecha_inicio = datetime(2024, 2, 15)  # La fecha de inicio es el 15/2/24
 fecha_actual = datetime.now()
 # fecha_formateada = (fecha_actual).strftime("%d de %B de %Y")
-#La línea 8 está solamente para hacer pruebas, la línea 6 es la correspondiente
-fecha_formateada = (fecha_actual - timedelta(days=1)).strftime("%d de %B de %Y")
+
+dias_a_restar = 1
+
+fecha_formateada = (fecha_actual - timedelta(days=dias_a_restar)).strftime("%d de %B de %Y")
 diferencia_dias = (fecha_actual - fecha_inicio).days
 valorIdPaquete = diferencia_dias + 1
 
 fecha_archivos_menos_un_dia_str  = datetime.now()
-fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=1)
+fecha_archivos_menos_un_dia = fecha_archivos_menos_un_dia_str - timedelta(days=dias_a_restar)
 fecha_archivos = fecha_archivos_menos_un_dia.strftime('%Y%m%d')
 
 fecha_datetime = pd.to_datetime(fecha_archivos).strftime('%Y-%m-%d')
@@ -111,8 +115,9 @@ def scrapear_app():
     pyautogui.press('enter')
     pyautogui.press('enter')
     time.sleep(25)
-    resultado_x, resultado_y = buscar_elemento("template_ok.png")
-    pyautogui.click(resultado_x, resultado_y)
+    pyautogui.click(resultado_x, resultado_y + 15)
+    # resultado_x, resultado_y = buscar_elemento("template_ok.png")
+    # pyautogui.click(resultado_x, resultado_y)
     # pyautogui.press('enter')
     # pyautogui.press('enter')
     time.sleep(5)
@@ -132,12 +137,15 @@ def scrapear_app():
     resultado_x, resultado_y = buscar_elemento("template_buscar.png")
     pyautogui.click(resultado_x, resultado_y)
     time.sleep(10)
-    # resultado_x, resultado_y = buscar_elemento("template_fisico_disponible.png")
-    # pyautogui.click(resultado_x, resultado_y)
-    # time.sleep(2)
+    resultado_x, resultado_y = buscar_elemento("template_fisico_disponible.png")
+    pyautogui.click(resultado_x, resultado_y)
+    time.sleep(2)
     resultado_x, resultado_y = buscar_elemento("template_exportar.png")
     pyautogui.click(resultado_x, resultado_y)
     time.sleep(10)
+    resultado_x, resultado_y = buscar_elemento("template_abrir_excel_task.jpg")
+    pyautogui.click(resultado_x, resultado_y)
+    time.sleep(5)
     resultado_x, resultado_y = buscar_elemento("template_file.png")
     pyautogui.click(resultado_x, resultado_y)
     time.sleep(2)
@@ -149,20 +157,22 @@ def scrapear_app():
     pyautogui.click(resultado_x, resultado_y)
     time.sleep(2)
     resultado_x, resultado_y = buscar_elemento("template_path.png")
-    pyautogui.click(resultado_x - 40, resultado_y)
-    pyautogui.write("C:/Users/joaco/Nueva carpeta/BDF_sincronizacion_github/BDF_sincronizacion/XLSX_inventario_old")
-    time.sleep(1)
+    pyautogui.click(resultado_x - 60, resultado_y)
+    pyautogui.write("C:/Users/SebastianFuhr/Desktop/BDF_sincronizaci/BDF_sincronizacion/XLSX_inventario_old")
+    time.sleep(5)
     pyautogui.press('enter')
-    time.sleep(2)
+    time.sleep(3)
     resultado_x, resultado_y = buscar_elemento("template_write_name.png")
     pyautogui.click(resultado_x, resultado_y)
-    pyautogui.press('delete')
+    # pyautogui.press('delete')
     pyautogui.write('XLSX_inventario_old'+fecha_archivos)
+    time.sleep(5)
     pyautogui.press('enter')
-    time.sleep(2)
+    time.sleep(4)
     resultado_x, resultado_y = buscar_elemento("template_cerrar_excel.png")
     pyautogui.click(resultado_x, resultado_y)
-
+    
+    time.sleep(6)
     pyautogui.hotkey('alt', 'f4')
     time.sleep(10)
     pyautogui.press('enter')
@@ -177,12 +187,15 @@ def scrapear_app():
     resultado_x, resultado_y = buscar_elemento("template_buscar.png")
     pyautogui.click(resultado_x, resultado_y)
     time.sleep(10)
-    # resultado_x, resultado_y = buscar_elemento("template_fisico_disponible.png")
-    # pyautogui.click(resultado_x, resultado_y)
-    # time.sleep(2)
+    resultado_x, resultado_y = buscar_elemento("template_fisico_disponible.png")
+    pyautogui.click(resultado_x, resultado_y)
+    time.sleep(2)
     resultado_x, resultado_y = buscar_elemento("template_exportar.png")
     pyautogui.click(resultado_x, resultado_y)
     time.sleep(10)
+    resultado_x, resultado_y = buscar_elemento("template_abrir_excel_task.jpg")
+    pyautogui.click(resultado_x, resultado_y)
+    time.sleep(5)
     resultado_x, resultado_y = buscar_elemento("template_file.png")
     pyautogui.click(resultado_x, resultado_y)
     time.sleep(2)
@@ -194,78 +207,23 @@ def scrapear_app():
     pyautogui.click(resultado_x, resultado_y)
     time.sleep(2)
     resultado_x, resultado_y = buscar_elemento("template_path.png")
-    pyautogui.click(resultado_x - 40, resultado_y)
-    pyautogui.write("C:/Users/joaco/Nueva carpeta/BDF_sincronizacion_github/BDF_sincronizacion/XLSX_inventario_old_scj")
-    time.sleep(1)
+    pyautogui.click(resultado_x - 60, resultado_y)
+    pyautogui.write("C:/Users/SebastianFuhr/Desktop/BDF_sincronizaci/BDF_sincronizacion/XLSX_inventario_old_scj")
+    time.sleep(5)
     pyautogui.press('enter')
-    time.sleep(2)
+    time.sleep(4)
     resultado_x, resultado_y = buscar_elemento("template_write_name.png")
     pyautogui.click(resultado_x, resultado_y)
-    pyautogui.press('delete')
+    # pyautogui.press('delete')
     pyautogui.write('XLSX_inventario_old_scj'+fecha_archivos)
     pyautogui.press('enter')
-    time.sleep(2)
+    time.sleep(4)
     resultado_x, resultado_y = buscar_elemento("template_cerrar_excel.png")
     pyautogui.click(resultado_x, resultado_y)
 
 
 
 def generar_archivo_inventario():
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True
-        )  # Cambiar a False SOLO en testing, en deploy tiene que estar en True
-        page = browser.new_page()
-        context = browser.new_context()
-        page.goto("http://appserver26.dyndns.org:8081/#/login")
-        page.wait_for_load_state("domcontentloaded")
-        try:
-            page.wait_for_selector(
-                "(//*[contains(text(),'Actualizar')])[2]", timeout=50000
-            )
-            page.click("(//*[contains(text(),'Actualizar')])[2]", timeout=50000)
-        except:
-            print("No hay botón reinicio")
-        page.wait_for_timeout(5000)
-        page.fill("//input[@id='username1']", "sebaf")
-        page.fill("//input[@id='pass']", "12345678")
-        page.click("//button[@label='INICIAR SESIÓN']")
-        page.wait_for_timeout(5000)
-
-        try:
-            page.click("//button[@class='btn btn-default']")
-        except:
-            pass
-
-        page.click("//a[@class='menu-button']")
-        page.wait_for_timeout(1000)
-        page.click("(//a[contains(@class,'p-ripple p-element ng-tns-c5')])[2]")
-        page.wait_for_timeout(1000)
-        page.click("(//a[contains(@class,'p-ripple p-element ng-tns-c5')])[6]")
-        page.wait_for_timeout(4000)
-
-        #Exportar
-        with page.expect_download() as download_info:        
-            page.click("//span[@mattooltip='Exportar artículos']")
-            page.wait_for_timeout(4000)
-            page.fill("//input[@formcontrolname='buscador']", "bdf")
-            page.wait_for_timeout(1500)
-            page.click("//button[@class='btn btn-md btn-primary']")
-
-        if not os.path.exists("./XLSX_inv_skus_bdf"):
-            try:
-                os.makedirs("./XLSX_inv_skus_bdf")
-                print(f"Directorio '{"./XLSX_inv_skus_bdf"}' creado correctamente.")
-            except OSError as e:
-                print(f"No se pudo crear el directorio '{"./XLSX_inv_skus_bdf"}': {e}")
-
-        download = download_info.value
-        download.save_as("./XLSX_inv_skus_bdf/inv_sku_bdf" + fecha_archivos + ".xlsx")
-
-        browser.close()
-
-
 
     def asignar_tipo_inventario(stock):
         if stock == 0:
@@ -276,23 +234,19 @@ def generar_archivo_inventario():
 
     df = pd.DataFrame()
 
-    df_inventario = pd.read_excel('./XLSX_inventario_old/XLSX_inventario_old'+fecha_archivos+'.xlsx', header=1)
+    df_inventario = pd.read_excel('./XLSX_inventario_old/XLSX_inventario_old'+fecha_archivos+'.xlsx')#, header=1)
 
-    df_skus = pd.read_excel('./XLSX_inv_skus_bdf/inv_sku_bdf' + fecha_archivos + '.xlsx', header=1)
-
-    df_skus = df_skus.drop([0])
-
-    #CANTIDAD = (df_skus['Unidad x Bulto'] * df_inventario['Bultos']) + df_inventario['Unids']
+    #OLVIDAR ==>#CANTIDAD = (df_skus['Unidad x Bulto'] * df_inventario['Bultos']) + df_inventario['Unids']
 
     df['IdDistribuidor'] = [40379573] * len(df_inventario)
     df['IdPaquete'] = valorIdPaquete
     df['IdProducto'] = df_inventario['Artículo']
     df['UnidadMedida'] = "PC"
     df['Fecha'] = fecha_datetime
-    df['IdTipoInventario'] = (((df_skus['Unidad x Bulto'] * df_inventario['Bultos']) + df_inventario['Unids']).fillna(0)).apply(asignar_tipo_inventario)
+    df['IdTipoInventario'] = (df_inventario['Stock disponible']).apply(asignar_tipo_inventario)
     df['Deposito'] = ""
-    df['Cantidad'] = (df_skus['Unidad x Bulto'] * df_inventario['Bultos']) + df_inventario['Unids']
-    df['Cantidad'] = df['Cantidad'].fillna(0)
+    df['Cantidad'] = df_inventario['Stock disponible']
+    df['Cantidad'] = round(df['Cantidad'].fillna(0))
 
     total_registros = len(df_inventario)
     suma_cantidad = df['Cantidad'].sum()
@@ -308,6 +262,7 @@ def generar_archivo_inventario():
     df['IdProducto'] = df['IdProducto'].replace(850612, 85061)
     df['IdProducto'] = df['IdProducto'].replace(850632, 85063)
     df['IdProducto'] = df['IdProducto'].replace(850662, 85066)
+    df['IdProducto'] = df['IdProducto'].replace(944292, 94429)
 
 
     if not os.path.exists(directorio_done):
@@ -327,7 +282,10 @@ def generar_archivo_inventario():
             print(f"Error al crear el archivo '{nombre_archivo_inventario}': {e}")
     else:
         print(f"No tienes permisos para escribir en el directorio '{directorio_done}'.") 
-
+    
+    ruta_archivo = ruta_archivo=(directorio_done + "/" + nombre_archivo_inventario)
+    nombre_carpeta = directorio_done.replace("/","").replace(".","")
+    subir_archivos_a_pagina.subir_archivos_a_pagina(ruta_archivo=ruta_archivo, nombre_carpeta=nombre_carpeta)
 
 
 
@@ -335,67 +293,64 @@ def generar_archivo_inventario():
 
 def generar_archivo_inventario_scj():
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True
-        )  # Cambiar a False SOLO en testing, en deploy tiene que estar en True
-        page = browser.new_page()
-        context = browser.new_context()
-        page.goto("http://appserver26.dyndns.org:8081/#/login")
-        page.wait_for_load_state("domcontentloaded")
-        try:
-            page.wait_for_selector(
-                "(//*[contains(text(),'Actualizar')])[2]", timeout=50000
-            )
-            page.click("(//*[contains(text(),'Actualizar')])[2]", timeout=50000)
-        except:
-            print("No hay botón reinicio")
-        page.wait_for_timeout(5000)
-        page.fill("//input[@id='username1']", "sebaf")
-        page.fill("//input[@id='pass']", "12345678")
-        page.click("//button[@label='INICIAR SESIÓN']")
-        page.wait_for_timeout(5000)
+    # with sync_playwright() as p:
+    #     browser = p.chromium.launch(
+    #         headless=True
+    #     )  # Cambiar a False SOLO en testing, en deploy tiene que estar en True
+    #     page = browser.new_page()
+    #     context = browser.new_context()
+    #     page.goto("http://appserver26.dyndns.org:8081/#/login")
+    #     page.wait_for_load_state("domcontentloaded")
+    #     try:
+    #         page.wait_for_selector(
+    #             "(//*[contains(text(),'Actualizar')])[2]", timeout=50000
+    #         )
+    #         page.click("(//*[contains(text(),'Actualizar')])[2]", timeout=50000)
+    #     except:
+    #         print("No hay botón reinicio")
+    #     page.wait_for_timeout(5000)
+    #     page.fill("//input[@id='username1']", "sebaf")
+    #     page.fill("//input[@id='pass']", "12345678")
+    #     page.click("//button[@label='INICIAR SESIÓN']")
+    #     page.wait_for_timeout(5000)
 
-        try:
-            page.click("//button[@class='btn btn-default']")
-        except:
-            pass
+    #     try:
+    #         page.click("//button[@class='btn btn-default']")
+    #     except:
+    #         pass
 
-        page.click("//a[@class='menu-button']")
-        page.wait_for_timeout(1000)
-        page.click("(//a[contains(@class,'p-ripple p-element ng-tns-c5')])[2]")
-        page.wait_for_timeout(1000)
-        page.click("(//a[contains(@class,'p-ripple p-element ng-tns-c5')])[6]")
-        page.wait_for_timeout(4000)
+    #     page.click("//a[@class='menu-button']")
+    #     page.wait_for_timeout(1000)
+    #     page.click("(//a[contains(@class,'p-ripple p-element ng-tns-c5')])[2]")
+    #     page.wait_for_timeout(1000)
+    #     page.click("(//a[contains(@class,'p-ripple p-element ng-tns-c5')])[6]")
+    #     page.wait_for_timeout(4000)
 
-        #Exportar
-        with page.expect_download() as download_info:        
-            page.click("//span[@mattooltip='Exportar artículos']")
-            page.wait_for_timeout(4000)
-            page.fill("//input[@formcontrolname='buscador']", "scj")
-            page.wait_for_timeout(1500)
-            page.click("//button[@class='btn btn-md btn-primary']")
+    #     #Exportar
+    #     with page.expect_download() as download_info:        
+    #         page.click("//span[@mattooltip='Exportar artículos']")
+    #         page.wait_for_timeout(4000)
+    #         page.fill("//input[@formcontrolname='buscador']", "scj")
+    #         page.wait_for_timeout(1500)
+    #         page.click("//button[@class='btn btn-md btn-primary']")
 
-        if not os.path.exists("./XLSX_inv_skus_scj"):
-            try:
-                os.makedirs("./XLSX_inv_skus_scj")
-                print(f"Directorio '{"./XLSX_inv_skus_scj"}' creado correctamente.")
-            except OSError as e:
-                print(f"No se pudo crear el directorio '{"./XLSX_inv_skus_scj"}': {e}")
+    #     if not os.path.exists("./XLSX_inv_skus_scj"):
+    #         try:
+    #             os.makedirs("./XLSX_inv_skus_scj")
+    #             print(f"Directorio '{"./XLSX_inv_skus_scj"}' creado correctamente.")
+    #         except OSError as e:
+    #             print(f"No se pudo crear el directorio '{"./XLSX_inv_skus_scj"}': {e}")
 
-        download = download_info.value
-        download.save_as("./XLSX_inv_skus_scj/inv_sku_scj" + fecha_archivos + ".xlsx")
+    #     download = download_info.value
+    #     download.save_as("./XLSX_inv_skus_scj/inv_sku_scj" + fecha_archivos + ".xlsx")
 
-        browser.close()
+    #     browser.close()
 
     
     directorio_done_scj = "./XLSX_inventario_done_scj/"
     nombre_archivo_inventario_scj = "mendizabal_inv_" + fecha_archivos + ".xlsx"
 
-    df_old = pd.read_excel('./XLSX_inventario_old_scj/XLSX_inventario_old_scj'+fecha_archivos+'.xlsx', header=1)
-
-    df_skus = pd.read_excel('./XLSX_inv_skus_scj/inv_sku_scj'+fecha_archivos+'.xlsx', header=1)
-    df_skus = df_skus.drop([0])
+    df_old = pd.read_excel('./XLSX_inventario_old_scj/XLSX_inventario_old_scj'+fecha_archivos+'.xlsx')
 
     df = pd.DataFrame()
 
@@ -403,7 +358,7 @@ def generar_archivo_inventario_scj():
     df['IdPaquete'] = valorIdPaquete
     df['Fecha'] = fecha_datetime
     df['IdProducto'] = df_old['Artículo']
-    df['Cantidad'] = ((df_old['Unids'] * 1) / df_skus['Unidad x Bulto']) + df_old['Bultos']
+    df['Cantidad'] = df_old['Stock disponible']
     df['Cantidad'] = (df['Cantidad'] + 0.01).astype(float)
     df['Cantidad'] = (df['Cantidad'].apply(lambda x: "{:.2f}".format(x))).astype(float)
     df['Cantidad'] = df['Cantidad'].fillna(0)
@@ -431,14 +386,23 @@ def generar_archivo_inventario_scj():
         except Exception as e:
             print(f"Error al crear el archivo '{nombre_archivo_inventario_scj}': {e}")
     else:
-        print(f"No tienes permisos para escribir en el directorio '{directorio_done_scj}'.") 
+        print(f"No tienes permisos para escribir en el directorio '{directorio_done_scj}'.")
+
+    ruta_archivo = ruta_archivo=(directorio_done_scj + "/" + nombre_archivo_inventario_scj)
+    nombre_carpeta = directorio_done_scj.replace("/","").replace(".","")
+    subir_archivos_a_pagina.subir_archivos_a_pagina(ruta_archivo=ruta_archivo, nombre_carpeta=nombre_carpeta)
 
 
 
 
-
-
-# scrapear_app()
-# generar_archivo_inventario()
+scrapear_app()
+generar_archivo_inventario()
 generar_archivo_inventario_scj()
 
+enviar_correos.enviar_correos("joacontre0@gmail.com", "APP_CHESS.PY")
+enviar_correos.enviar_correos("sebaf@jjmendizabal.com.ar", "APP_CHESS.PY")
+
+
+time.sleep(5)
+script_path = "C:/Users/SebastianFuhr/Desktop/Dashboard_sincro/actualizar_repo.sh"
+subprocess.run(["bash", script_path], shell=True)
